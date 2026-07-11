@@ -14,7 +14,14 @@ const navItems = [
 ];
 
 // Paths where navbar should be shown
-const NAVBAR_PATHS = ["/", "/about", "/services", "/contact"];
+const NAVBAR_PATHS = [
+  "/",
+  "/about",
+  "/services",
+  "/contact",
+  "/terms",
+  "/privacy",
+];
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

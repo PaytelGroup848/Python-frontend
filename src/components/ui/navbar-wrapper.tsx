@@ -3,7 +3,14 @@
 import { usePathname } from "next/navigation";
 import { Navbar } from "./navbar";
 
-const NAVBAR_PATHS = ["/", "/about", "/services", "/contact"];
+const NAVBAR_PATHS = [
+  "/",
+  "/about",
+  "/services",
+  "/contact",
+  "/terms",
+  "/privacy",
+];
 
 export function NavbarWrapper() {
   const pathname = usePathname();
