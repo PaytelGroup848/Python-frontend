@@ -8,13 +8,14 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
+  Link,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useAuthStore } from "@/stores/auth-store";
 
 import { useState } from "react";
-
+import { motion } from "framer-motion";
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -50,25 +51,16 @@ const sidebarItems = [
   },
 ];
 
-export function DashboardLayout({
-  children,
-}: DashboardLayoutProps) {
-
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const logout =
-    useAuthStore(
-      (state) => state.logout
-    );
+  const logout = useAuthStore((state) => state.logout);
 
   function handleLogout() {
-
     logout();
 
-    localStorage.removeItem(
-      "ai-platform-auth"
-    );
+    localStorage.removeItem("ai-platform-auth");
 
     router.push("/login");
   }
@@ -81,7 +73,6 @@ export function DashboardLayout({
         text-black
       "
     >
-
       {/* Sidebar */}
 
       <aside
@@ -98,91 +89,45 @@ export function DashboardLayout({
       >
         {/* Logo */}
 
-        <div
-          className="
-            flex
-            items-center
-            gap-3
-            border-b
-            border-zinc-200
-            px-4
-            py-6
-            justify-between
-          "
+        <motion.div
+          initial={{ opacity: 0, x: -24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+          className="flex items-center gap-3 cursor-pointer group select-none"
         >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <img
-              className="
-                flex
-                h-11
-                w-11
-                shrink-0
-                items-center
-                justify-center
-                rounded-2xl
-                bg-white
-                text-black
-              "
-              src="./Cloudedatalogo.svg"
-            />
-
-            {!isCollapsed && (
-              <div className="whitespace-nowrap">
-                <h1 className="text-lg font-semibold">
-                  AI Platform
-                </h1>
-
-                <p className="text-xs text-zinc-400">
-                  By CloudeData
-                </p>
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            onClick={() => setIsCollapsed((prev) => !prev)}
-            className="
-              shrink-0
-              flex h-8 w-8 items-center justify-center rounded-lg
-              text-zinc-500
-              transition hover:bg-zinc-100 hover:text-zinc-800
-            "
+          <Link
+            className="relative flex items-center justify-center"
+            href={"/"}
           >
-            {isCollapsed ? (
-              <PanelLeftOpen className="h-5 w-5 mr-3" />
-            ) : (
-              <PanelLeftClose className="h-5 w-5" />
-            )}
-          </button>
-        </div>
+            <motion.span className="text-xl md:text-2xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 bg-clip-text text-transparent">
+                Patwatoli
+              </span>
+            </motion.span>
+          </Link>
+        </motion.div>
 
         {/* Navigation */}
 
         <nav className="flex-1 space-y-1 p-4">
-
           {sidebarItems.map((item) => {
             const Icon = item.icon;
 
             return (
               <button
                 key={item.title}
-
                 onClick={() =>
                   router.push(
                     item.title === "Chat"
                       ? "/chat"
                       : item.title === "OCR"
-                      ? "/ocr"
-                      : item.title === "Analytics"
-                      ? "/analytics"
-                      : "/settings"
+                        ? "/ocr"
+                        : item.title === "Analytics"
+                          ? "/analytics"
+                          : "/settings",
                   )
                 }
-
                 title={isCollapsed ? item.title : undefined}
-
                 className={`
                   group
                   flex
@@ -236,9 +181,7 @@ export function DashboardLayout({
           >
             {!isCollapsed && (
               <>
-                <p className="text-sm font-medium">
-                  Enterprise Plan
-                </p>
+                <p className="text-sm font-medium">Enterprise Plan</p>
 
                 <p
                   className="
@@ -247,7 +190,7 @@ export function DashboardLayout({
                     text-zinc-600
                   "
                 >
-                  AI Infrastructure By CloudeData
+                  AI Infrastructure By Patwatoli
                 </p>
               </>
             )}
@@ -287,7 +230,6 @@ export function DashboardLayout({
       {/* Main Section */}
 
       <div className="flex flex-1 flex-col">
-
         {/* Topbar */}
 
         {/* <header

@@ -91,7 +91,7 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold text-zinc-900 mb-1">Email</h3>
                   <p className="text-zinc-600 hover:text-blue-600 transition-colors">
-                    support@cloudedata.com
+                    support@patwatoli.com
                   </p>
                   <p className="text-zinc-500 text-sm mt-1">
                     We respond within 24 hours

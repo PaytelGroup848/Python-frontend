@@ -172,7 +172,7 @@ export default function TermsPage() {
       icon: Mail,
       title: "23. Contact Information",
       content:
-        "Email: info@cloudedata.com\nAddress: Okhla Industrial Estate, Phase 3, New Delhi – 110020, India",
+        "Email: info@patwatoli.com\nAddress: Okhla Industrial Estate, Phase 3, New Delhi – 110020, India",
     },
   ];
 
@@ -220,7 +220,7 @@ export default function TermsPage() {
     {
       title: "24.9 No Refund Policy",
       content:
-        "All payments made to Cloudedata are non-refundable, including cases of cancellation, dissatisfaction, or downtime caused by third-party or client-side issues.",
+        "All payments made to Patwatoli are non-refundable, including cases of cancellation, dissatisfaction, or downtime caused by third-party or client-side issues.",
     },
     {
       title: "24.10 Fees & Payment",
@@ -276,10 +276,10 @@ export default function TermsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4 text-sm text-zinc-500">
             <span className="flex items-center gap-1">
               <Mail className="w-4 h-4" />
-              info@cloudedata.com
+              info@patwatoli.com
             </span>
             <span className="hidden sm:block">•</span>
-            <span>www.cloudedata.com</span>
+            <span>www.patwatoli.com</span>
             <span className="hidden sm:block">•</span>
             <span>Effective: July 11, 2026</span>
           </div>
@@ -322,7 +322,7 @@ export default function TermsPage() {
             </motion.div>
           ))}
 
-          {/* Service-Specific Terms - Cloudedata Accounting ERP */}
+          {/* Service-Specific Terms - Patwatoli Accounting ERP */}
           <motion.div
             variants={fadeInUp}
             transition={{ duration: 0.4 }}
@@ -331,7 +331,7 @@ export default function TermsPage() {
             <div className="flex items-center gap-3 mb-6">
               <Server className="w-6 h-6 text-blue-600" />
               <h2 className="text-2xl font-bold text-zinc-900">
-                24. Service-Specific Terms – Cloudedata Accounting ERP on Cloud
+                24. Service-Specific Terms – Patwatoli Accounting ERP on Cloud
               </h2>
             </div>
 
@@ -364,20 +364,20 @@ export default function TermsPage() {
               <Mail className="w-5 h-5 text-blue-600" />
               <span className="text-zinc-700">Questions? Contact us at</span>
               <a
-                href="mailto:info@cloudedata.com"
+                href="mailto:info@patwatoli.com"
                 className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
               >
-                info@cloudedata.com
+                info@patwatoli.com
               </a>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-500">
-              <span>www.cloudedata.com</span>
+              <span>www.patwatoli.com</span>
               <span>•</span>
               <span>Last updated: July 11, 2026</span>
             </div>
             <div className="mt-4 pt-4 border-t border-zinc-200/50">
               <p className="text-xs text-zinc-400">
-                © 2026 Cloudedata. All rights reserved.
+                © 2026 Patwatoli. All rights reserved.
               </p>
             </div>
           </motion.div>

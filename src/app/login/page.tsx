@@ -34,33 +34,6 @@ export default function LoginPage() {
         className="relative w-full max-w-md"
       >
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-2xl shadow-blue-500/10 p-8 md:p-10">
-          {/* Logo/Brand - Centered */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex justify-center items-center mb-2"
-          >
-            <Link
-              href="/"
-              className="relative flex items-center justify-center group"
-            >
-              <motion.img
-                src="/Cloudedata.svg"
-                alt="Cloudedata Logo"
-                className="h-15 md:h-18 w-auto object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-300"
-                animate={{ y: [0, -3, 0] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 3,
-                  ease: "easeInOut",
-                }}
-              />
-              {/* Glow effect behind logo */}
-              <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-400/20 to-purple-400/20 blur-2xl rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </Link>
-          </motion.div>
-
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">

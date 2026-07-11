@@ -41,7 +41,7 @@ export default function PrivacyPage() {
     {
       icon: FileText,
       title: "1. Overview",
-      content: `This Universal Terms of Service Agreement ("Agreement") is entered into between Cloudedata and you ("User") and becomes effective on the date you access our website or electronically accept these terms.
+      content: `This Universal Terms of Service Agreement ("Agreement") is entered into between Patwatoli and you ("User") and becomes effective on the date you access our website or electronically accept these terms.
 
 Unless stated otherwise, the contracting entity is:
 
@@ -50,15 +50,15 @@ Paytel Terminal Pvt. Ltd.
 Registered Address: Okhla Industrial Estate, Phase 3, New Delhi – 110020, India
 
 This Agreement governs your use of:
-• The Cloudedata website ("Site")
-• All products and services provided by Cloudedata ("Services")
+• The Patwatoli website ("Site")
+• All products and services provided by Patwatoli ("Services")
 
-Your use of the Site or Services confirms that you have read and understood this Agreement, agree to comply with all applicable policies, and are using our Services for commercial or professional purposes. Cloudedata reserves the right to update or modify these terms at any time; continued use constitutes acceptance.`,
+Your use of the Site or Services confirms that you have read and understood this Agreement, agree to comply with all applicable policies, and are using our Services for commercial or professional purposes. Patwatoli reserves the right to update or modify these terms at any time; continued use constitutes acceptance.`,
     },
     {
       icon: Shield,
       title: "2. Eligibility & Authority",
-      content: `To use Cloudedata Services, you confirm that:
+      content: `To use Patwatoli Services, you confirm that:
 • You are at least 18 years of age
 • You are legally capable of entering into binding agreements
 • You are not prohibited under applicable laws of India or other jurisdictions
@@ -68,42 +68,42 @@ If you accept this Agreement on behalf of a business or legal entity, you confir
     {
       icon: Globe,
       title: "3. Sanctions & Compliance",
-      content: `You represent and warrant that you are not located in, resident of, or operating from a sanctioned country, nor affiliated with any sanctioned individual or entity. You will not use Cloudedata Services for or on behalf of any sanctioned party.
+      content: `You represent and warrant that you are not located in, resident of, or operating from a sanctioned country, nor affiliated with any sanctioned individual or entity. You will not use Patwatoli Services for or on behalf of any sanctioned party.
 
-Cloudedata reserves the right to conduct sanctions screening, request verification information, and suspend or terminate Services immediately if sanctions violations are detected. You agree to indemnify Cloudedata against any losses arising from non-compliance.`,
+Patwatoli reserves the right to conduct sanctions screening, request verification information, and suspend or terminate Services immediately if sanctions violations are detected. You agree to indemnify Patwatoli against any losses arising from non-compliance.`,
     },
     {
       icon: Lock,
       title: "4. Account Registration & Security",
-      content: `To access certain Services, you must create a Cloudedata account. You agree to provide accurate and complete account information, keep login credentials secure, and update information promptly.
+      content: `To access certain Services, you must create a Patwatoli account. You agree to provide accurate and complete account information, keep login credentials secure, and update information promptly.
 
 Security recommendation: Change your password at least once every six (6) months.
 
-Cloudedata is not responsible for losses resulting from unauthorised access caused by your failure to secure your credentials.`,
+Patwatoli is not responsible for losses resulting from unauthorised access caused by your failure to secure your credentials.`,
     },
     {
       icon: Users,
       title: "5. Account Access & Sharing",
-      content: `Cloudedata allows controlled account access to trusted third parties. By granting access, you acknowledge that access is provided at your own risk, authorised users may view limited personal and billing information, and certain critical actions remain restricted.
+      content: `Patwatoli allows controlled account access to trusted third parties. By granting access, you acknowledge that access is provided at your own risk, authorised users may view limited personal and billing information, and certain critical actions remain restricted.
 
-You assume full legal and financial responsibility for actions taken by authorised users. Cloudedata is not responsible for disputes between account holders and authorised third parties.`,
+You assume full legal and financial responsibility for actions taken by authorised users. Patwatoli is not responsible for disputes between account holders and authorised third parties.`,
     },
     {
       icon: Server,
       title: "6. International Data Transfers",
-      content: `If you access Cloudedata Services from outside the country where our servers are located, your data may be transferred across international borders. By using our Services, you consent to such transfers in compliance with applicable data protection laws.`,
+      content: `If you access Patwatoli Services from outside the country where our servers are located, your data may be transferred across international borders. By using our Services, you consent to such transfers in compliance with applicable data protection laws.`,
     },
     {
       icon: Clock,
       title: "7. Service Availability",
-      content: `Cloudedata aims to provide services 24/7, using commercially reasonable efforts. However, you acknowledge that services may occasionally be unavailable due to scheduled maintenance, system upgrades, network failures, cybersecurity incidents, or events beyond our reasonable control.
+      content: `Patwatoli aims to provide services 24/7, using commercially reasonable efforts. However, you acknowledge that services may occasionally be unavailable due to scheduled maintenance, system upgrades, network failures, cybersecurity incidents, or events beyond our reasonable control.
 
-Cloudedata does not guarantee uninterrupted availability and shall not be liable for downtime beyond its reasonable control.`,
+Patwatoli does not guarantee uninterrupted availability and shall not be liable for downtime beyond its reasonable control.`,
     },
     {
       icon: Sparkles,
       title: "8. Pre-Release & Beta Services",
-      content: `From time to time, Cloudedata may offer beta services or limited preview features. These services are provided "as-is" and may be modified or discontinued at any time.`,
+      content: `From time to time, Patwatoli may offer beta services or limited preview features. These services are provided "as-is" and may be modified or discontinued at any time.`,
     },
   ];
 
@@ -119,8 +119,6 @@ Cloudedata does not guarantee uninterrupted availability and shall not be liable
       </div>
 
       <div className="max-w-5xl mx-auto relative">
-        
-
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -148,10 +146,10 @@ Cloudedata does not guarantee uninterrupted availability and shall not be liable
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4 text-sm text-zinc-500">
             <span className="flex items-center gap-1">
               <Mail className="w-4 h-4" />
-              support@cloudedata.com
+              support@patwatoli.com
             </span>
             <span className="hidden sm:block">•</span>
-            <span>www.cloudedata.com</span>
+            <span>www.patwatoli.com</span>
             <span className="hidden sm:block">•</span>
             <span>Effective: July 11, 2026</span>
           </div>
@@ -256,19 +254,19 @@ Cloudedata does not guarantee uninterrupted availability and shall not be liable
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
             <a
-              href="mailto:support@cloudedata.com"
+              href="mailto:support@patwatoli.com"
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium hover:underline"
             >
               <Mail className="w-4 h-4" />
-              support@cloudedata.com
+              support@patwatoli.com
             </a>
             <span className="hidden sm:block text-zinc-300">|</span>
-            <span className="text-zinc-500">www.cloudedata.com</span>
+            <span className="text-zinc-500">www.patwatoli.com</span>
           </div>
           <div className="mt-4 pt-4 border-t border-zinc-200/50">
             <p className="text-xs text-zinc-400">Last updated: July 11, 2026</p>
             <p className="text-xs text-zinc-400 mt-1">
-              © 2026 Cloudedata. All rights reserved.
+              © 2026 Patwatoli. All rights reserved.
             </p>
           </div>
         </motion.div>
