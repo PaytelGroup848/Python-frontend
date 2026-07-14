@@ -71,26 +71,11 @@ export default function HomePage() {
               <span className="text-zinc-800">Platform for Everyone</span>
             </h1>
 
-<<<<<<< HEAD
-            <p
-              className="
-                mt-3
-                max-w-2xl
-                text-zinc-600
-                dark:text-white-400
-              "
-            >
-              Production-grade AI infrastructure platform
-              with realtime voice, OCR pipelines,
-              vector search, developer APIs,
-              and scalable AI orchestration.
-=======
             {/* Subtitle - Dark text */}
             <p className="text-lg md:text-xl font-semibold text-zinc-700 max-w-2xl mx-auto mb-10">
               Analyze PDFs, process voice, and harness the power of AI — all in
               one beautiful platform. Production-grade infrastructure at your
               fingertips.
->>>>>>> dbc15e165008a2c5ca8a1eaaefd8e2dc21cdf827
             </p>
 
             {/* CTA Buttons */}
