@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-
-import {
-  Geist,
-  Geist_Mono,
-} from "next/font/google";
-
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
 import { QueryProvider } from "@/providers/query-provider";
-
-import {
-  ThemeProvider,
-} from "@/components/providers/theme-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { NavbarWrapper } from "@/components/ui/navbar-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,22 +36,17 @@ export default function RootLayout({
         antialiased
       `}
     >
-      <body className="min-h-full flex flex-col">
-
-       <ThemeProvider
-         attribute="class"
-         defaultTheme="dark"
-         enableSystem={false}
-       >
-
-      <QueryProvider>
-
-        {children}
-
-      </QueryProvider>
-
-       </ThemeProvider>
-
+      <body className="h-full">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
+          <QueryProvider>
+            <NavbarWrapper />
+            <main className="h-full">{children}</main>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

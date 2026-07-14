@@ -11,9 +11,7 @@ export const apiClient = axios.create({
   },
 });
 
-/* =========================
-   REQUEST INTERCEPTOR
-========================= */
+
 
 apiClient.interceptors.request.use(
   (config) => {
