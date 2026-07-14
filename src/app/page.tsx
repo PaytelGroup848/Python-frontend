@@ -38,7 +38,7 @@ export default function HomePage() {
                 mt-3
                 max-w-2xl
                 text-zinc-600
-                dark:text-zinc-400
+                dark:text-white-400
               "
             >
               Production-grade AI infrastructure platform

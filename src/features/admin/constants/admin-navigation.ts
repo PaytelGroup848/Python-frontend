@@ -7,6 +7,9 @@ export const ADMIN_NAVIGATION = [
   { label: "Workers", href: "/admin/workers" },
   { label: "Queues", href: "/admin/queues" },
 
+  
+  { title: "Datasets",href: "/admin/datasets"},
+
   { label: "Documents", href: "/admin/documents" },
   { label: "RAG", href: "/admin/rag" },
   { label: "OCR", href: "/admin/ocr" },
