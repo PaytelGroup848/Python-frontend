@@ -21,3 +21,5 @@ export * from "./dataset-statistics";
 export * from "./dataset-quick-actions";
 
 export * from "./edit-dataset-dialog";
+
+export * from "./dataset-pagination";

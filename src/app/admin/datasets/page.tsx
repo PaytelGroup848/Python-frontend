@@ -1,5 +1,7 @@
 "use client";
 
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+
 import {
 
     DatasetToolbar,
@@ -33,7 +35,84 @@ import {
 } from "@/features/datasets/stores/dataset-store";
 
 
+
+import {
+    DatasetQueryParams,
+} from "@/features/datasets/types/dataset";
+
+import {
+    DatasetPagination,
+} from "@/features/datasets/components";
+
+
 export default function DatasetsPage() {
+
+   
+
+    const searchParams = useSearchParams();
+
+    const router = useRouter();
+
+    const pathname = usePathname();
+
+    function updateQuery(
+        changes: Partial<DatasetQueryParams>,
+    ) {
+
+        const params = new URLSearchParams(
+            searchParams.toString(),
+        );
+
+        Object.entries(changes).forEach(
+            ([key, value]) => {
+ 
+                if (
+                    value === undefined ||
+                    value === ""
+                ) {
+
+                    params.delete(key);
+
+                } else {
+
+                    params.set(
+                        key,
+                        String(value),
+                    );
+
+                }
+
+            },
+        );
+
+        router.replace(
+            `${pathname}?${params.toString()}`
+        );
+
+    }
+
+    const query: DatasetQueryParams = {
+
+        page: searchParams.get("page")
+            ? Number(searchParams.get("page"))
+            : undefined,
+
+        page_size: searchParams.get("page_size")
+            ? Number(searchParams.get("page_size"))
+            : undefined,
+
+        search: searchParams.get("search") ?? undefined,
+
+        domain: searchParams.get("domain") ?? undefined,
+
+        status: searchParams.get("status") ?? undefined,
+
+        sort: searchParams.get("sort") ?? undefined,
+
+        direction:
+            (searchParams.get("direction") as "asc" | "desc" | null) ?? undefined,
+
+    };
 
     const {
 
@@ -41,7 +120,15 @@ export default function DatasetsPage() {
 
         isLoading,
 
-    } = useDatasets();
+        error,
+
+        refetch,
+
+    } = useDatasets(
+
+        query,
+
+    );
 
     const datasets =
         data?.items ?? [];
@@ -99,6 +186,20 @@ export default function DatasetsPage() {
 
     }
 
+    if (error) {
+
+        return (
+
+            <div className="p-6">
+
+                Failed to load datasets.
+
+            </div>
+
+        );
+
+    }
+
     return (
 
         <div className="space-y-6 p-6">
@@ -112,7 +213,97 @@ export default function DatasetsPage() {
                 Dataset Management
             </h1>
 
-            <DatasetToolbar />
+            <DatasetToolbar
+
+                search={
+
+                    query.search ?? ""
+
+                }
+
+                domain={
+
+                    query.domain ?? ""
+
+                }
+
+                status={
+
+                    query.status ?? ""
+
+                }
+
+                corpus={
+                    ""
+                }
+
+                onSearchChange={(value) =>
+
+                    updateQuery({
+
+                        search:
+
+                            value || undefined,
+
+                        page:
+
+                            undefined,
+
+                    })
+
+                }
+
+                onDomainChange={(value) =>
+
+                    updateQuery({
+
+                        domain:
+
+                            value || undefined,
+
+                        page:
+
+                            undefined,
+
+                    })
+
+                }
+
+                onStatusChange={(value) =>
+
+                    updateQuery({
+
+                        status:
+
+                            value || undefined,
+
+                        page:
+
+                            undefined,
+
+                    })
+
+                }
+
+                onCorpusChange={() => {
+
+                }}
+
+                onRefresh={
+
+                    refetch
+
+                }
+
+                onCreateDataset={() => {
+
+                    useDatasetStore
+                        .getState()
+                        .openCreateDialog();
+
+                }}
+
+            />
 
             <DatasetTable
 
@@ -145,6 +336,86 @@ export default function DatasetsPage() {
                         .openDeleteDialog();
 
                 }}
+
+            />
+
+            <DatasetPagination
+
+                page={
+
+                    data?.page ?? 1
+
+                }
+
+                totalPages={
+
+                    data?.total_pages ?? 1
+
+                }
+
+                pages={
+
+                    []
+
+                }
+
+                onPrevious={() => {
+
+                    if (
+
+                        !data ||
+
+                        data.page <= 1
+
+                    ) {
+
+                        return;
+
+                    }
+
+                    updateQuery({
+
+                        page:
+
+                            data.page - 1,
+
+                    });
+
+                }}
+
+                onNext={() => {
+
+                    if (
+
+                        !data ||
+
+                        data.page >= data.total_pages
+
+                    ) {
+
+                        return;
+
+                    }
+
+                    updateQuery({
+
+                        page:
+
+                        data.page + 1,
+
+                    });
+
+                }}
+
+                onPageChange={(page) =>
+
+                    updateQuery({
+
+                        page,
+
+                    })
+
+                }
 
             />
 

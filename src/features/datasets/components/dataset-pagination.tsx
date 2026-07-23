@@ -8,6 +8,8 @@ interface Props {
 
     totalPages: number;
 
+    pages: number[];
+
     onPrevious(): void;
 
     onNext(): void;
@@ -23,6 +25,8 @@ export function DatasetPagination({
     page,
 
     totalPages,
+
+    pages,
 
     onPrevious,
 
@@ -66,56 +70,41 @@ export function DatasetPagination({
 
                 {
 
-                    Array.from(
+                    pages.map(
 
-                        {
+                        (value) => (
 
-                            length: totalPages,
+                            <Button
 
-                        }
+                                key={value}
 
-                    ).map(
+                                variant={
 
-                        (_, index) => {
+                                    value === page
 
-                            const value =
-                                index + 1;
+                                        ? "default"
 
-                            return (
+                                        : "outline"
 
-                                <Button
+                                }
 
-                                    key={value}
+                                onClick={() =>
 
-                                    variant={
+                                    onPageChange(
 
-                                        value === page
+                                        value
 
-                                            ? "default"
+                                    )
 
-                                            : "outline"
+                                }
 
-                                    }
+                            >
 
-                                    onClick={() =>
+                                {value}
 
-                                        onPageChange(
+                            </Button>
 
-                                            value
-
-                                        )
-
-                                    }
-
-                                >
-
-                                    {value}
-
-                                </Button>
-
-                            );
-
-                        }
+                        )
 
                     )
 

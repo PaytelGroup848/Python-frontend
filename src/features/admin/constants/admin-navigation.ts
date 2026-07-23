@@ -9,6 +9,7 @@ export const ADMIN_NAVIGATION = [
 
   
   { title: "Datasets",href: "/admin/datasets"},
+  {label: "Training",href: "/admin/training",},
 
   { label: "Documents", href: "/admin/documents" },
   { label: "RAG", href: "/admin/rag" },
