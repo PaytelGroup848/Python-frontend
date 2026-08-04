@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "@/services/api/client";
 
 export interface ProviderStatus {
   name: string;
@@ -14,8 +14,7 @@ class ProviderService {
 
   async getProviders(): Promise<ProviderResponse> {
 
-    const response = await axios.get(
-      "http://localhost:8000/admin/providers"
+    const response = await apiClient.get("/admin/providers"
     );
 
     return response.data;

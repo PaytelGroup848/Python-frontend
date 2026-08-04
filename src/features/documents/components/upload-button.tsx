@@ -47,7 +47,10 @@ export function UploadButton() {
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+          "Document upload failed",
+          error
+      );
 
       alert(
         "Upload failed"

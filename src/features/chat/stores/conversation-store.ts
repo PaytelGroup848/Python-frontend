@@ -13,6 +13,12 @@ interface ConversationState {
   activeConversationId:
     number | null;
 
+  activeAssistantId: number | null;
+
+  setActiveAssistantId: (
+    assistantId: number | null
+  ) => void;
+
   setConversations: (
     conversations:
       Conversation[]
@@ -33,6 +39,8 @@ useConversationStore =
       activeConversationId:
         null,
 
+      activeAssistantId: null,
+
       setConversations: (
         conversations
       ) =>
@@ -46,6 +54,13 @@ useConversationStore =
         set({
           activeConversationId:
             id,
+        }),
+
+      setActiveAssistantId: (
+        assistantId
+      ) =>
+        set({
+          activeAssistantId: assistantId,
         }),
     })
   );

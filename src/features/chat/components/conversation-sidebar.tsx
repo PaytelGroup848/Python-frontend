@@ -57,6 +57,13 @@ ConversationSidebar() {
       state.setMessages
   );
 
+
+  const activeAssistantId =
+  useConversationStore(
+      state =>
+          state.activeAssistantId
+  );
+
   /* =========================
      LOAD CONVERSATIONS
   ========================= */
@@ -65,10 +72,18 @@ ConversationSidebar() {
 
     async function load() {
 
+      setActiveConversation(
+        null
+      );
+
+      setMessages([]);
+
       try {
 
         const data =
-          await getConversations();
+          await getConversations(
+            activeAssistantId
+          );
 
         setConversations(data);
 
@@ -113,7 +128,9 @@ ConversationSidebar() {
 
     load();
 
-  }, []);
+  }, [
+    activeAssistantId
+  ]);
 
   /* =========================
      CREATE CHAT
@@ -124,19 +141,14 @@ ConversationSidebar() {
   try {
 
     const conversation =
-      await createConversation();
-
-    console.log(
-      "CREATED CONVERSATION:",
-      conversation
-    );
-
-    setActiveConversation(
-      conversation.id
-    );
+      await createConversation(
+          activeAssistantId
+      );
 
     const updatedConversations =
-      await getConversations();
+        await getConversations(
+            activeAssistantId
+        );
 
     setConversations(
       updatedConversations
@@ -146,12 +158,10 @@ ConversationSidebar() {
       conversation.id
     );
 
+
     setMessages([]);
 
-    console.log(
-      "ACTIVE SET:",
-      conversation.id
-    );
+    
 
   } catch (error) {
 
@@ -180,16 +190,41 @@ async function handleDeleteChat(
     );
 
     if (
-      activeConversationId ===
-      conversationId
+        activeConversationId ===
+        conversationId
     ) {
 
-      setActiveConversation(
-        null
-      );
+      if (
+          updatedConversations.length > 0
+      ) {
 
-      setMessages([]);
-    }
+          const latest =
+              updatedConversations[0];
+
+          const messages =
+              await getConversationMessages(
+                  latest.id
+              );
+
+          setActiveConversation(
+              latest.id
+          );
+
+          setMessages(
+              messages
+          );
+
+      } else {
+
+          setActiveConversation(
+              null
+          );
+
+          setMessages([]);
+
+      }
+
+  }
 
   } catch (error) {
 

@@ -165,7 +165,6 @@ export const useDatasetStore = create<DatasetStore>(
             }),
 
         resetFilters: () =>
-
             set({
 
                 search: "",
@@ -175,6 +174,8 @@ export const useDatasetStore = create<DatasetStore>(
                 domainFilter: "",
 
                 corpusFilter: "",
+
+                selectedDatasetId: null,
 
             }),
 

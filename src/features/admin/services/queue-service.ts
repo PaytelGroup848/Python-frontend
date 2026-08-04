@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "@/services/api/client";
 
 export interface QueueResponse {
   chat_queue: number;
@@ -11,8 +11,7 @@ class QueueService {
 
   async getQueues(): Promise<QueueResponse> {
 
-    const response = await axios.get(
-      "http://localhost:8000/admin/queues"
+    const response = await apiClient.get("/admin/queues"
     );
 
     return response.data;

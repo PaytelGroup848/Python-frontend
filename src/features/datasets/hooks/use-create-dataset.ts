@@ -20,13 +20,11 @@ export function useCreateDataset() {
                 request,
             ),
 
-        onSuccess: () => {
+        onSuccess: async () => {
 
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
 
-                queryKey: [
-                    "datasets",
-                ],
+                queryKey: ["datasets"],
 
             });
 

@@ -11,7 +11,13 @@ import {
   ConversationSidebar,
 } from "@/features/chat/components/conversation-sidebar";
 
+import {
+  AssistantSelector,
+} from "@/features/playground/components/assistant-selector";
 
+import {
+    ChatHeader,
+} from "@/features/playground/components/chat-header";
 
 export default function ChatPage() {
 
@@ -20,20 +26,36 @@ export default function ChatPage() {
 
       <DashboardLayout>
 
+        <div className="flex h-full">
+
+            <AssistantSelector />
+
+            <ConversationSidebar />
+
         <div
-        
+            className="
+            flex
+            flex-1
+            flex-col
+          "
         >
 
-          {/* <ConversationSidebar /> */}
+          <ChatHeader />
 
-          
-
-            
+          <div
+              className="
+              flex-1
+              overflow-hidden
+            "
+          >
 
             <ChatWindow />
 
+          </div>
 
         </div>
+
+      </div>
 
       </DashboardLayout>
 

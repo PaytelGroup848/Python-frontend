@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import {
@@ -89,11 +88,19 @@ export function ChatWindow() {
       state.conversations
   );
 
-const setConversations =
-  useConversationStore(
-    (state) =>
-      state.setConversations
-  );
+  const setConversations =
+    useConversationStore(
+      (state) =>
+        state.setConversations
+    );
+
+  const activeAssistantId =
+    useConversationStore(
+      (state) =>
+        state.activeAssistantId
+    );
+
+
 
   const bottomRef =
   useRef<HTMLDivElement>(null);
@@ -113,10 +120,7 @@ const setConversations =
 
     (data) => {
 
-      console.log(
-        "WS DATA:",
-        data
-      );
+      
 
       if (
         data.type === "start"
@@ -170,7 +174,10 @@ const setConversations =
     content: string
   ) {
 
-    if (!content.trim()) {
+    if (
+      !content.trim() ||
+      isStreaming
+    ) {
       return;
     }
 
@@ -227,9 +234,6 @@ const setConversations =
       "connected"
     ) {
 
-      alert(
-        "WebSocket not connected yet"
-      );
 
       return;
     }
@@ -247,20 +251,13 @@ const setConversations =
     );
 
     if (!currentConversationId) {
-
-      alert(
-        "Please create/select a conversation first"
-      );
-
       return;
     }
 
     socketClient.send({
-
+      conversation_id: currentConversationId,
+      assistant_id: activeAssistantId,
       message: content,
-
-      conversation_id:
-        currentConversationId,
     });
 
   }
@@ -281,10 +278,7 @@ const setConversations =
     (state) => state.user
   );
 
-  {console.log(
-    "USER:",
-    user
-  )}
+ 
 
   function getGreeting() {
   const istHour = Number(
@@ -324,8 +318,9 @@ const setConversations =
           </h1>
 
           <MessageInput
-          onSend={handleSend}
-        />
+            onSend={handleSend}
+            disabled={isStreaming}
+          />
         </div>
       ) : (
         // ---------- Active conversation state ----------
@@ -337,8 +332,9 @@ const setConversations =
 
           <div className="relative z-10 flex justify-center px-6 pb-6">
             <MessageInput
-          onSend={handleSend}
-        />
+              onSend={handleSend}
+              disabled={isStreaming}
+          />
           </div>
         </>
       )}

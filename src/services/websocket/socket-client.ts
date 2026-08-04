@@ -12,7 +12,7 @@ class SocketClient {
     WebSocket | null = null;
 
   private reconnectTimer:
-    NodeJS.Timeout | null = null;
+    ReturnType<typeof setTimeout> | null = null;
 
   private reconnectAttempts =
   0;
@@ -39,7 +39,7 @@ class SocketClient {
     string | null = null;
 
   private heartbeatInterval:
-    NodeJS.Timeout | null = null;
+    ReturnType<typeof setInterval> | null = null;
 
   private currentHandler:
     MessageHandler | undefined;

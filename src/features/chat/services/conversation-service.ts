@@ -6,37 +6,61 @@ import {
 } from "../types/conversation.types";
 
 export async function
-createConversation() {
+createConversation(
+  assistantId:
+    number | null
+) {
 
   const response =
     await apiClient.post(
+
       "/conversations",
+
       {
-        title: "New Chat",
+
+        title:
+          "New Chat",
+
+        assistant_id:
+          assistantId,
+
       }
+
     );
 
-  console.log(
-    "CREATE CONVERSATION RESPONSE:",
-    response.data
-  );
-
   return (
+
     response.data.data
     ||
+
     response.data
+
   );
+
 }
 
-
 export async function
-getConversations():
-
-Promise<Conversation[]> {
+getConversations(
+  assistantId:
+    number | null
+): Promise<Conversation[]> {
 
   const response =
     await apiClient.get(
-      "/conversations"
+
+      "/conversations",
+
+      {
+
+        params: {
+
+          assistant_id:
+            assistantId,
+
+        },
+
+      }
+
     );
 
   return response.data;

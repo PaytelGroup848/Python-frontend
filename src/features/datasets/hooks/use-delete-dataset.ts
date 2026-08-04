@@ -18,13 +18,11 @@ export function useDeleteDataset() {
                 datasetId,
             ),
 
-        onSuccess: () => {
+        onSuccess: async () => {
 
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
 
-                queryKey: [
-                    "datasets",
-                ],
+                queryKey: ["datasets"],
 
             });
 

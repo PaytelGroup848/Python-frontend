@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "@/services/api/client";
 
 import {
   AnalyticsResponse
@@ -10,10 +10,9 @@ class AnalyticsService {
     Promise<AnalyticsResponse> {
 
     const response =
-      await axios.get(
-
-        "http://localhost:8000/analytics/overview"
-      );
+      await apiClient.get(
+        "/analytics/overview"
+      )
 
     return response.data;
   }

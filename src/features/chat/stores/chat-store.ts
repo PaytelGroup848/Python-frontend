@@ -50,36 +50,36 @@ export const useChatStore =
         ],
       })),
 
-    updateLastMessage: (
-      chunk
-    ) =>
+    updateLastMessage: (chunk) =>
       set((state) => {
 
-        const messages = [
-          ...state.messages,
-        ];
+        const messages = [...state.messages];
 
-        const lastMessage =
-          [...messages]
-            .reverse()
-            .find(
-              (message) =>
-                message.role ===
-                "assistant"
-          );
-
-        if (
-          lastMessage &&
-          lastMessage.role ===
-          "assistant"
+        for (
+          let i = messages.length - 1;
+          i >= 0;
+          i--
         ) {
-          lastMessage.content +=
-            chunk;
+          if (
+            messages[i].role ===
+            "assistant"
+          ) {
+
+            messages[i] = {
+              ...messages[i],
+              content:
+                messages[i].content +
+                chunk,
+            };
+
+            break;
+          }
         }
 
-        return { messages };
+        return {
+          messages,
+        };
       }),
-
     setStreaming: (
   value
 ) =>

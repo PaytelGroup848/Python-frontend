@@ -13,11 +13,8 @@ export function useDatasets(
     return useQuery({
 
         queryKey: [
-
             "datasets",
-
             params,
-
         ],
 
         queryFn: () =>
@@ -25,6 +22,8 @@ export function useDatasets(
                 params ?? {},
             ),
 
-        });
+        placeholderData: (previousData) =>
+            previousData,
+    });
 
 }

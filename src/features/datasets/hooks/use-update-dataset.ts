@@ -34,13 +34,17 @@ export function useUpdateDataset() {
 
             ),
 
-        onSuccess: () => {
+        onSuccess: async (_, variables) => {
 
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
 
-                queryKey: [
-                    "datasets",
-                ],
+                queryKey: ["datasets"],
+
+            });
+
+            await queryClient.invalidateQueries({
+
+                queryKey: ["dataset", variables.datasetId],
 
             });
 

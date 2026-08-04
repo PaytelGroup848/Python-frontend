@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "@/services/api/client";
 
 export interface WorkerStatus {
   name: string;
@@ -14,8 +14,7 @@ class WorkerService {
 
   async getWorkers(): Promise<WorkerResponse> {
 
-    const response = await axios.get(
-      "http://localhost:8000/admin/workers"
+    const response = await apiClient.get("/admin/workers"
     );
 
     return response.data;

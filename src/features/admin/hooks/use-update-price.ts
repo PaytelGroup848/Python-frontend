@@ -7,6 +7,22 @@ import {
   updatePrice,
 } from "../services/plan-service";
 
+interface UpdatePriceMutation {
+  priceId: number;
+
+  payload: {
+    provider: string;
+
+    currency: string;
+
+    amount: number;
+
+    billing_cycle: string;
+
+    external_price_id?: string;
+  };
+}
+
 export function useUpdatePrice() {
 
   const queryClient =
@@ -14,22 +30,18 @@ export function useUpdatePrice() {
 
   return useMutation({
 
-    mutationFn: ({
-
-      priceId,
-
-      payload,
-
-    }: any) =>
-
+    mutationFn: (
+      data: UpdatePriceMutation
+    ) =>
       updatePrice(
-        priceId,
-        payload
+        data.priceId,
+        data.payload
       ),
 
-    onSuccess: () => {
+    onSuccess: async () => {
 
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
+
         queryKey: [
           "plan-prices"
         ],

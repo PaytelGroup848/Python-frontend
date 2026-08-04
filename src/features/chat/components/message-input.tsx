@@ -27,14 +27,25 @@ import {
   useVoiceRecorder,
 } from "@/features/voice/hooks/useVoiceRecorder";
 
+import {
+  useAssistants,
+} from "@/features/playground/hooks/use-assistants";
+
+import {
+  useConversationStore,
+} from "../stores/conversation-store";
+
 interface MessageInputProps {
-  onSend: (
+  onSend:(
     message: string
   ) => void;
+
+  disabled?: boolean;
 }
 
 export function MessageInput({
   onSend,
+  disabled = false,
 }: MessageInputProps) {
 
   const [message, setMessage] =
@@ -52,6 +63,32 @@ export function MessageInput({
     startRecording,
     stopRecording,
   } = useVoiceRecorder();
+
+  const activeAssistantId =
+      useConversationStore(
+          state =>
+              state.activeAssistantId
+      );
+
+  const {
+      data: assistants = [],
+  } = useAssistants();
+
+  const assistant =
+      assistants.find(
+
+          item =>
+              item.id ===
+              activeAssistantId
+
+      );
+
+
+  const config =
+      assistant?.config;
+
+  const isGeneralAssistant =
+    assistant?.code === "general";
 
   useEffect(() => {
 
@@ -141,7 +178,10 @@ export function MessageInput({
 
   function handleSend() {
 
-    if (!message.trim()) {
+    if (
+      disabled ||
+      !message.trim()
+    ) {
       return;
     }
 
@@ -216,9 +256,27 @@ export function MessageInput({
     >
       <textarea
         value={message}
-        onChange={(e) =>
-          setMessage(e.target.value)
-        }
+        onChange={(e) => {
+
+            setMessage(e.target.value);
+
+        }}
+
+        onKeyDown={(event) => {
+
+          if (
+            event.key === "Enter" &&
+            !event.shiftKey
+          ) {
+
+            event.preventDefault();
+
+            handleSend();
+          }
+
+        }}
+
+
         onInput={(e) => {
 
           e.currentTarget.style.height = "auto";
@@ -235,7 +293,11 @@ export function MessageInput({
         "
       />
 
-      <div className="flex items-center justify-between px-2 pt-1">
+      <div
+        className="flex items-center justify-between px-2 pt-1"
+      >
+
+        {(isGeneralAssistant || config?.document_chat_enabled) && (
 
         <button
           type="button"
@@ -244,7 +306,10 @@ export function MessageInput({
             inputRef.current?.click()
           }
 
-          disabled={uploading}
+          disabled={
+            uploading ||
+            disabled
+          }
 
           aria-label="Upload document"
 
@@ -254,8 +319,14 @@ export function MessageInput({
             disabled:opacity-50
           "
         >
+
           <Upload className="h-4.5 w-4.5" />
+
         </button>
+
+      )}
+
+        {(isGeneralAssistant || config?.document_chat_enabled) && (
 
         <input
           ref={inputRef}
@@ -284,22 +355,50 @@ export function MessageInput({
             if (file) {
 
               handleUpload(file);
+
             }
+
           }}
+
         />
+
+      )}
 
         <div className="flex items-center gap-1">
 
-          <div className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700">
-            <VoiceButton
-              isRecording={isRecording}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-            />
-          </div>
+          {(isGeneralAssistant || config?.voice_enabled) && (
+
+          <div
+            className="
+              flex
+              h-8
+              w-8
+              items-center
+              justify-center
+              rounded-full
+              text-zinc-500
+              transition
+              hover:bg-zinc-100
+              hover:text-zinc-700
+            "
+          >
+
+          <VoiceButton
+            isRecording={isRecording}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+          />
+
+        </div>
+
+      )}
 
           <button
             onClick={handleSend}
+            disabled={
+              disabled ||
+              !message.trim()
+            }
             aria-label="Send message"
             className="
               ml-1 flex h-9 w-9 items-center justify-center rounded-full

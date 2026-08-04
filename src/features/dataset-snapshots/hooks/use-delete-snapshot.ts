@@ -20,31 +20,17 @@ export function useDeleteSnapshot() {
                 snapshotId,
             ),
 
-        onSuccess: (
-            _,
-            snapshotId,
-        ) => {
+        onSuccess: async (_, snapshotId) => {
 
-            queryClient.invalidateQueries({
-
-                queryKey: [
-
-                    "dataset-snapshots",
-
-                ],
-
+            await queryClient.invalidateQueries({
+                queryKey: ["dataset-snapshots"],
             });
 
             queryClient.removeQueries({
-
                 queryKey: [
-
                     "dataset-snapshot",
-
                     snapshotId,
-
                 ],
-
             });
 
         },

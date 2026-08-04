@@ -47,14 +47,12 @@ export function useCreateTrainingJob() {
 
             ),
 
-        onSuccess: () => {
+        onSuccess: async () => {
 
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
 
                 queryKey: [
-
                     "training-jobs",
-
                 ],
 
             });

@@ -20,32 +20,15 @@ export function useSealSnapshot() {
                 snapshotId,
             ),
 
-        onSuccess: (
-            snapshot,
-        ) => {
+        onSuccess: async (snapshot) => {
 
-            queryClient.invalidateQueries({
-
-                queryKey: [
-
-                    "dataset-snapshots",
-
-                ],
-
+            await queryClient.invalidateQueries({
+                queryKey: ["dataset-snapshots"],
             });
 
             queryClient.setQueryData(
-
-                [
-
-                    "dataset-snapshot",
-
-                    snapshot.id,
-
-                ],
-
+                ["dataset-snapshot", snapshot.id],
                 snapshot,
-
             );
 
         },

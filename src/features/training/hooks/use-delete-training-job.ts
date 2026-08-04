@@ -20,9 +20,9 @@ export function useDeleteTrainingJob() {
                 trainingJobId,
             ),
 
-        onSuccess: () => {
+        onSuccess: async () => {
 
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
 
                 queryKey: [
                     "training-jobs",

@@ -1,8 +1,24 @@
 export interface Conversation {
 
-  id: number;
+    id: number;
 
-  title: string;
+    workspace_id: number;
 
-  created_at: string;
+    assistant_id: number | null;
+
+    title: string;
+
+    status: string;
+
+    pinned: boolean;
+
+    archived: boolean;
+
+    message_count: number;
+
+    last_message_at: string | null;
+
+    created_at: string;
+
+    updated_at: string;
 }

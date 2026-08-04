@@ -39,9 +39,10 @@ export function useUpdateVersion() {
         payload
       ),
 
-    onSuccess: () => {
-
-      queryClient.invalidateQueries();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["admin-plans"],
+      });
     },
   });
 }

@@ -25,12 +25,7 @@ export function useDataset(
             ),
 
         enabled:
-
-            Number.isFinite(
-
-                datasetId,
-
-            ),
+            datasetId > 0,
 
     });
 
