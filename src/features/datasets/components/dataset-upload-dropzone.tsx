@@ -53,11 +53,9 @@ export function DatasetUploadDropzone({
             </p>
 
             <input
-
                 ref={inputRef}
-
                 type="file"
-
+                accept=".pdf,.doc,.docx,.txt,.csv,.json,.jsonl,.parquet,.xlsx,*"
                 hidden
 
                 onChange={(event) => {

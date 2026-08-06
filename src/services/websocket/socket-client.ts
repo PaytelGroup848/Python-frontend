@@ -1,7 +1,9 @@
 type SocketPayload = {
   type: string;
   content?: string;
+  response?: string;
 };
+
 
 type MessageHandler = (
   data: SocketPayload

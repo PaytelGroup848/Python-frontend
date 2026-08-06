@@ -152,11 +152,8 @@ export function UploadRecordsDialog({
                 <div className="space-y-4">
 
                     <input
-
                         type="file"
-
-                        accept=".csv,.json,.jsonl,.parquet"
-
+                        accept=".pdf,.doc,.docx,.txt,.csv,.json,.jsonl,.parquet,.xlsx,*"
                         onChange={(event) => {
 
                             const selected =

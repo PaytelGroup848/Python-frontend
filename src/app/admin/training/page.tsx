@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
     TrainingTable,
     TrainingToolbar,
+    CreateTrainingDialog,
 } from "@/features/training/components";
 
 import { useTrainingJobs } from "@/features/training/hooks/use-training-jobs";
@@ -16,6 +17,8 @@ export default function TrainingPage() {
     const [search, setSearch] = useState("");
 
     const [status, setStatus] = useState("");
+
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     const query = useMemo(
         () => ({
@@ -72,11 +75,7 @@ export default function TrainingPage() {
                 onRefresh={() => refetch()}
 
                 onCreateTraining={() => {
-
-                    alert(
-                        "Create Training Dialog will be added next.",
-                    );
-
+                    setIsCreateOpen(true);
                 }}
 
             />
@@ -106,6 +105,11 @@ export default function TrainingPage() {
                     }}
                 />
             )}
+
+            <CreateTrainingDialog
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
+            />
         </div>
     );
 }

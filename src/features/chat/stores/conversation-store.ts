@@ -61,6 +61,7 @@ useConversationStore =
       ) =>
         set({
           activeAssistantId: assistantId,
+          activeConversationId: null,
         }),
     })
   );

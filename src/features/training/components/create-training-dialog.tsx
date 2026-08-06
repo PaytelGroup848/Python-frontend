@@ -151,6 +151,25 @@ export function CreateTrainingDialog({
             undefined,
         );
 
+    const rawDatasets: any = datasets.data;
+    const rawSnapshots: any = snapshots.data;
+    const rawProviders: any = providers.data;
+    const rawConfigs: any = configurations.data;
+    const rawModels: any = models.data;
+    const rawModelVersions: any = modelVersions.data;
+    const rawTokenizers: any = tokenizers.data;
+    const rawTokenizerVersions: any = tokenizerVersions.data;
+
+    const datasetList: any[] = Array.isArray(rawDatasets) ? rawDatasets : (rawDatasets?.items ?? []);
+    const snapshotList: any[] = Array.isArray(rawSnapshots) ? rawSnapshots : (rawSnapshots?.items ?? []);
+    const providerList: any[] = Array.isArray(rawProviders) ? rawProviders : (rawProviders?.items ?? []);
+    const configList: any[] = Array.isArray(rawConfigs) ? rawConfigs : (rawConfigs?.items ?? []);
+    const modelList: any[] = Array.isArray(rawModels) ? rawModels : (rawModels?.items ?? []);
+    const modelVersionList: any[] = Array.isArray(rawModelVersions) ? rawModelVersions : (rawModelVersions?.items ?? []);
+    const tokenizerList: any[] = Array.isArray(rawTokenizers) ? rawTokenizers : (rawTokenizers?.items ?? []);
+    const tokenizerVersionList: any[] = Array.isArray(rawTokenizerVersions) ? rawTokenizerVersions : (rawTokenizerVersions?.items ?? []);
+
+
     useEffect(() => {
 
         if (!open) {
@@ -288,7 +307,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {datasets.data?.items.map(
+                                    {datasetList.map(
 
                                         dataset => (
 
@@ -354,7 +373,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {snapshots.data?.map(
+                                    {snapshotList.map(
 
                                         snapshot => (
 
@@ -409,7 +428,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {providers.data?.map(
+                                    {providerList.map(
                                         (provider) => (
 
                                             <option
@@ -461,7 +480,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {configurations.data?.map(
+                                    {configList.map(
                                         (configuration) => (
 
                                             <option
@@ -518,7 +537,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {models.data?.items.map(model => (
+                                    {modelList.map(model => (
 
                                             <option
                                                 key={model.id}
@@ -573,7 +592,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {modelVersions.data?.map(
+                                    {modelVersionList.map(
                                         (version) => (
 
                                             <option
@@ -625,7 +644,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {tokenizers.data?.map(
+                                    {tokenizerList.map(
                                         (tokenizer) => (
 
                                             <option
@@ -668,7 +687,7 @@ export function CreateTrainingDialog({
 
                                     </option>
 
-                                    {tokenizerVersions.data?.map(
+                                    {tokenizerVersionList.map(
                                         (version) => (
 
                                             <option

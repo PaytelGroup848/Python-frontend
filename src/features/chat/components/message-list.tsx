@@ -20,6 +20,8 @@ import {
   useChatStore,
 } from "../stores/chat-store";
 
+import { Bot, Sparkles } from "lucide-react";
+
 interface MessageListProps {
   messages: ChatMessage[];
 }
@@ -34,8 +36,14 @@ const isStreaming =
       state.isStreaming
   );
 
+  const showThinking = isStreaming && (
+    messages.length === 0 || 
+    messages[messages.length - 1]?.role === "user" || 
+    !messages[messages.length - 1]?.content
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
       {messages.map((message) => (
 
@@ -63,19 +71,17 @@ const isStreaming =
                 message.role ===
                 "user"
                   ? `
-                    bg-black
+                    bg-emerald-600
                     text-white
-                    dark:bg-white
-                    dark:text-black
+                    shadow-sm
+                    font-medium
                   `
                   : `
                     border
-                    border-zinc-200
+                    border-slate-200/90
                     bg-white
-                    text-zinc-900
-                    dark:border-white/10
-                    dark:bg-zinc-800
-                    dark:text-white
+                    text-slate-800
+                    shadow-sm
                   `
               }
             `}
@@ -146,18 +152,43 @@ const isStreaming =
   <span
     className="
       ml-1
+      inline-block
+      h-4
+      w-2
       animate-pulse
-      text-zinc-500
-      dark:text-zinc-400
+      bg-emerald-600
+      rounded-xs
     "
-  >
-    ▋
-  </span>
+  />
 )}
 
           </div>
         </div>
       ))}
+
+      {showThinking && (
+        <div className="flex justify-start">
+          <div className="flex items-center gap-3.5 rounded-2xl border border-emerald-200 bg-white/95 px-5 py-3.5 shadow-sm backdrop-blur-md">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/30">
+              <Bot size={18} className="animate-pulse" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                <Sparkles size={13} className="text-emerald-600 animate-spin" />
+                <span>Searching dataset & generating response...</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                <span>RAG vector retrieval active</span>
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.3s]"></span>
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.15s]"></span>
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+}

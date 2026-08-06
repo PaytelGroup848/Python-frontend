@@ -108,6 +108,11 @@ class DatasetRecordService {
             new FormData();
 
         formData.append(
+            "dataset_id",
+            datasetId.toString(),
+        );
+
+        formData.append(
 
             "file",
 
@@ -118,7 +123,7 @@ class DatasetRecordService {
         const response =
             await apiClient.post(
 
-                `/datasets/${datasetId}/records/import`,
+                "/dataset-uploads",
 
                 formData,
 

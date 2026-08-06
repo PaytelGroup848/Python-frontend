@@ -249,9 +249,9 @@ export function MessageInput({
 
     <div
       className="
-        w-full max-w-2xl rounded-3xl border border-white/70
-        bg-white/90 p-3 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.25)]
-        backdrop-blur-md
+        w-full max-w-2xl rounded-3xl border border-slate-200/90
+        bg-white/95 p-3 shadow-[0_15px_45px_-12px_rgba(5,150,105,0.18)]
+        backdrop-blur-xl transition hover:border-emerald-300
       "
     >
       <textarea
@@ -288,7 +288,7 @@ export function MessageInput({
         rows={1}
         className="
           w-full resize-none border-none bg-transparent px-3 py-2
-          text-[15px] text-zinc-800 placeholder:text-zinc-400
+          text-[15px] text-slate-800 placeholder:text-slate-400
           focus:outline-none
         "
       />
@@ -315,7 +315,7 @@ export function MessageInput({
 
           className="
             flex h-8 w-8 items-center justify-center rounded-full
-            text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700
+            text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700
             disabled:opacity-50
           "
         >
@@ -376,10 +376,10 @@ export function MessageInput({
               items-center
               justify-center
               rounded-full
-              text-zinc-500
+              text-slate-500
               transition
-              hover:bg-zinc-100
-              hover:text-zinc-700
+              hover:bg-emerald-50
+              hover:text-emerald-700
             "
           >
 
@@ -402,8 +402,8 @@ export function MessageInput({
             aria-label="Send message"
             className="
               ml-1 flex h-9 w-9 items-center justify-center rounded-full
-              bg-gradient-to-br from-zinc-700 to-zinc-500 text-white
-              shadow-sm transition enabled:hover:opacity-90
+              bg-emerald-600 hover:bg-emerald-700 text-white
+              shadow-md shadow-emerald-600/30 transition enabled:hover:scale-105
               disabled:cursor-not-allowed disabled:opacity-40
             "
           >

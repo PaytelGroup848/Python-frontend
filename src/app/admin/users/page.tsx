@@ -191,24 +191,19 @@ export default function UsersPage() {
                       window.location.reload();
                     }}
                   >
-
                     <option value="free">
-                      FREE
+                      FREE TIER
                     </option>
 
                     <option value="pro">
-                      PRO
-                    </option>
-
-                    <option value="business">
-                      BUSINESS
+                      PRO TIER
                     </option>
 
                     <option value="enterprise">
-                      ENTERPRISE
+                      ENTERPRISE TIER
                     </option>
-
                   </select>
+
 
                 </td>
 

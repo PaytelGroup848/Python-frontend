@@ -4,7 +4,7 @@ export * from "./training-toolbar";
 
 export * from "./training-status-badge";
 
-//export * from "./create-training-dialog";
+export * from "./create-training-dialog";
 
 export * from "./training-details-dialog";
 
