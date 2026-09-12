@@ -6,7 +6,7 @@ import { ChatHeader } from "@/features/playground/components/chat-header";
 export default function ChatPage() {
   return (
     <AuthGuard>
-      <div className="flex h-screen w-screen overflow-hidden bg-slate-950">
+      <div className="flex h-screen w-screen overflow-hidden bg-slate-100">
         <ConversationSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <ChatHeader />

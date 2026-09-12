@@ -31,3 +31,34 @@
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+/* ====================================================
+   ChatGPT-Style Inline Streaming Cursor
+   Pins cursor directly to the end of the text flow
+   without orphan line breaks or screen jitter.
+   ==================================================== */
+@keyframes cursor-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.streaming-cursor > *:last-child::after,
+.streaming-cursor > *:last-child > *:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.35rem;
+  height: 1.05rem;
+  margin-left: 0.25rem;
+  vertical-align: -0.15rem;
+  background-color: #059669;
+  border-radius: 1px;
+  animation: cursor-blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.streaming-cursor > *:last-child:has(> *)::after {
+  content: none;
+}

@@ -36,6 +36,19 @@ export function ChatHeader() {
 
         {/* FEATURE BADGES */}
         <div className="ml-4 hidden md:flex items-center gap-1.5 border-l border-slate-200 pl-4">
+          {assistant?.code === "coder" && (
+            <>
+              <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-800 border border-purple-200">
+                Code Assistant
+              </span>
+              <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 border border-indigo-200">
+                Syntax Highlighting
+              </span>
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-800 border border-blue-200">
+                Refactoring
+              </span>
+            </>
+          )}
           {(assistant?.code === "general" || assistant?.config?.document_chat_enabled) && (
             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800 border border-emerald-200">
               Documents
@@ -76,4 +89,4 @@ export function ChatHeader() {
       </div>
     </header>
   );
-}
+}

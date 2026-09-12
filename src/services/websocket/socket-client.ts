@@ -273,16 +273,13 @@ private startHeartbeat() {
       "reconnecting";
 
 
+    const jitter = Math.floor(Math.random() * 500);
     const delay = Math.min(
-  1000 *
-  Math.pow(
-    2,
-    this.reconnectAttempts
-  ),
-  30000
-);
+      1000 * Math.pow(2, this.reconnectAttempts) + jitter,
+      30000
+    );
 
-this.reconnectAttempts++;
+    this.reconnectAttempts++;
 
     this.reconnectTimer =
       setTimeout(() => {

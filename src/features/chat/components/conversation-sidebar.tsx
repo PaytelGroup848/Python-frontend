@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -14,6 +13,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   MessageSquare,
+  Key,
 } from "lucide-react";
 
 import {
@@ -27,7 +27,12 @@ import { useConversationStore } from "../stores/conversation-store";
 import { useChatStore } from "../stores/chat-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAssistants } from "@/features/playground/hooks/use-assistants";
+import { useQuery } from "@tanstack/react-query";
+import { fetchUserUsage } from "@/features/billing/services/billing.service";
+import { UpgradePlanModal } from "@/features/billing/components/upgrade-plan-modal";
 import { SettingsModal } from "./settings-modal";
+import { ApiKeysModal } from "./api-keys-modal";
+
 
 export function ConversationSidebar() {
   const router = useRouter();
@@ -45,6 +50,17 @@ export function ConversationSidebar() {
   const { data: assistants = [] } = useAssistants();
   const [isAssistantDropdownOpen, setIsAssistantDropdownOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isApiKeysOpen, setIsApiKeysOpen] = useState(false);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+
+  const { data: usage } = useQuery({
+    queryKey: ["billing-usage"],
+    queryFn: fetchUserUsage,
+    staleTime: 60 * 1000,
+  });
+
+  const currentPlanName = usage?.plan?.toUpperCase() || "FREE";
+
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const userEmail = user?.email || "user@platform.com";
@@ -148,23 +164,21 @@ export function ConversationSidebar() {
 
   return (
     <aside
-      className={`relative flex h-full flex-col border-r border-slate-200/80 bg-white/85 backdrop-blur-2xl text-slate-800 select-none shadow-xl transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "w-72"
-      }`}
+      className={`relative flex h-full flex-col border-r border-slate-200 bg-white text-slate-900 select-none shadow-sm transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-72"
+        }`}
     >
       {/* ASSISTANT SELECTOR & TOGGLE HEADER */}
       <div className="relative border-b border-slate-200/80 p-3.5 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 px-1">
-              AI Model Assistant
+              Patwatoli AI Assistant
             </label>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all ${
-              isCollapsed ? "mx-auto" : "ml-auto"
-            }`}
+            className={`p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all ${isCollapsed ? "mx-auto" : "ml-auto"
+              }`}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -204,9 +218,8 @@ export function ConversationSidebar() {
         {/* DROPDOWN MENU */}
         {isAssistantDropdownOpen && (
           <div
-            className={`absolute z-50 max-h-80 overflow-y-auto space-y-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl backdrop-blur-xl ${
-              isCollapsed ? "left-20 top-2 w-64" : "left-3.5 right-3.5 top-[84px]"
-            }`}
+            className={`absolute z-50 max-h-80 overflow-y-auto space-y-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl backdrop-blur-xl ${isCollapsed ? "left-20 top-2 w-64" : "left-3.5 right-3.5 top-[84px]"
+              }`}
           >
             {assistants.map((assistant) => (
               <button
@@ -217,11 +230,10 @@ export function ConversationSidebar() {
                   setMessages([]);
                   setIsAssistantDropdownOpen(false);
                 }}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                  activeAssistantId === assistant.id
+                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition ${activeAssistantId === assistant.id
                     ? "bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/80 shadow-xs"
                     : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600/10 text-emerald-700 font-bold">
                   <Bot size={15} />
@@ -289,13 +301,11 @@ export function ConversationSidebar() {
                     setMessages([]);
                   }
                 }}
-                className={`group flex items-center ${
-                  isCollapsed ? "justify-center p-2.5" : "justify-between px-3 py-2.5"
-                } rounded-xl text-sm cursor-pointer transition-all duration-150 ${
-                  isActive
+                className={`group flex items-center ${isCollapsed ? "justify-center p-2.5" : "justify-between px-3 py-2.5"
+                  } rounded-xl text-sm cursor-pointer transition-all duration-150 ${isActive
                     ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200/80 shadow-sm"
                     : "text-slate-600 border border-transparent hover:bg-slate-100 hover:text-slate-900"
-                }`}
+                  }`}
                 title={isCollapsed ? conversation.title || "Untitled Chat" : undefined}
               >
                 {!isCollapsed ? (
@@ -322,37 +332,96 @@ export function ConversationSidebar() {
       </div>
 
       {/* USER & SETTINGS FOOTER */}
-      <div className="border-t border-slate-200/80 p-3.5 mt-auto space-y-2">
+      <div className="border-t border-slate-200 p-3 mt-auto space-y-2 bg-slate-50">
         {!isCollapsed ? (
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 border border-transparent"
-          >
-            <Settings size={16} className="text-emerald-600" />
-            <span>Platform Settings</span>
-          </button>
+          <>
+            {/* UPGRADE PLAN BUTTON */}
+            <button
+              onClick={() => setIsUpgradeOpen(true)}
+              className="flex w-full items-center justify-between rounded-xl bg-white border border-slate-200 p-2.5 transition hover:border-emerald-500 hover:bg-emerald-50/30 shadow-xs cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs group-hover:scale-105 transition-transform">
+                  <Sparkles size={16} />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900">
+                    {currentPlanName === "PRO" ? "Pro Plan Active" : "Upgrade Plan"}
+                  </div>
+                  <div className="text-[11px] font-medium text-slate-500">
+                    {currentPlanName === "PRO" ? "1M monthly tokens" : "Frontier AI & higher limits"}
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                  currentPlanName === "PRO"
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : "bg-emerald-600 text-white"
+                }`}
+              >
+                {currentPlanName === "PRO" ? "PRO" : "UPGRADE"}
+              </span>
+            </button>
+
+            {/* DEVELOPER API KEYS */}
+            <button
+              onClick={() => setIsApiKeysOpen(true)}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 hover:text-slate-950 hover:bg-slate-200/70 transition cursor-pointer"
+            >
+              <Key size={16} className="text-slate-700" />
+              <span className="text-slate-800 font-semibold">Developer API Keys</span>
+            </button>
+
+            {/* PLATFORM SETTINGS */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 hover:text-slate-950 hover:bg-slate-200/70 transition cursor-pointer"
+            >
+              <Settings size={16} className="text-slate-700" />
+              <span className="text-slate-800 font-semibold">Platform Settings</span>
+            </button>
+          </>
         ) : (
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-emerald-600 transition hover:bg-slate-100 mx-auto"
-            title="Platform Settings"
-          >
-            <Settings size={18} />
-          </button>
+          <>
+            <button
+              onClick={() => setIsUpgradeOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-emerald-600 shadow-xs hover:border-emerald-400 hover:bg-emerald-50 mx-auto transition cursor-pointer"
+              title={`Upgrade Plan (${currentPlanName})`}
+            >
+              <Sparkles size={18} />
+            </button>
+
+            <button
+              onClick={() => setIsApiKeysOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs hover:text-slate-900 hover:bg-slate-100 mx-auto transition cursor-pointer"
+              title="Developer API Keys"
+            >
+              <Key size={18} />
+            </button>
+
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs hover:text-slate-900 hover:bg-slate-100 mx-auto transition cursor-pointer"
+              title="Platform Settings"
+            >
+              <Settings size={18} />
+            </button>
+          </>
         )}
 
-        {/* USER DETAILS CARD & LOGOUT */}
+        {/* USER PROFILE CARD */}
         {!isCollapsed ? (
-          <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-2.5 border border-slate-200/80 shadow-sm">
+          <div className="flex items-center justify-between rounded-xl bg-white p-2.5 border border-slate-200 shadow-xs">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 font-bold text-xs text-white shadow-md shadow-emerald-600/30">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700 font-bold text-xs text-white shadow-xs">
                 {userAvatarInitial}
               </div>
               <div className="truncate">
                 <div className="text-xs font-bold text-slate-900 truncate">
                   {userName}
                 </div>
-                <div className="text-[10px] text-slate-500 truncate">
+                <div className="text-[11px] font-medium text-slate-500 truncate">
                   {userEmail}
                 </div>
               </div>
@@ -360,7 +429,7 @@ export function ConversationSidebar() {
 
             <button
               onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
               title="Log out"
             >
               <LogOut size={16} />
@@ -369,7 +438,7 @@ export function ConversationSidebar() {
         ) : (
           <button
             onClick={handleLogout}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-md shadow-emerald-600/30 mx-auto transition hover:opacity-90"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-xs font-bold text-white shadow-xs mx-auto transition hover:opacity-90 cursor-pointer"
             title={`Log out (${userName})`}
           >
             {userAvatarInitial}
@@ -378,6 +447,8 @@ export function ConversationSidebar() {
       </div>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <ApiKeysModal isOpen={isApiKeysOpen} onClose={() => setIsApiKeysOpen(false)} />
+      <UpgradePlanModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
     </aside>
   );
-}
+}

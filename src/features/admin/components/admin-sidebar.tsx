@@ -24,6 +24,7 @@ import {
   BarChart3,
   Activity,
   Settings,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import {
@@ -50,6 +51,11 @@ const navigation = [
         label: "Users",
         href: "/admin/users",
         icon: Users,
+      },
+      {
+        label: "Media Gallery",
+        href: "/admin/media",
+        icon: ImageIcon,
       },
     ],
   },

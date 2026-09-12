@@ -315,7 +315,7 @@ export function Navbar() {
               href={"/"}
             >
               <motion.span className="text-xl md:text-2xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-emerald-500 via-green-500 to-emerald-600 bg-clip-text text-transparent">
                   Patwatoli
                 </span>
               </motion.span>
@@ -345,7 +345,7 @@ export function Navbar() {
                   />
                   {item.name}
                   {isActive && (
-                    <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full" />
+                    <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-linear-to-r from-emerald-500 to-green-500 rounded-full" />
                   )}
                 </Link>
               );
@@ -355,14 +355,14 @@ export function Navbar() {
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-2 lg:gap-3">
             <Link
-              href="/login"
+              href="/chat?auth=login"
               className="px-3 lg:px-4 py-1.5 lg:py-2 text-sm font-medium rounded-xl transition-all duration-200 text-zinc-700 hover:bg-zinc-100"
             >
               Log In
             </Link>
             <Link
-              href="/register"
-              className="px-3 lg:px-4 py-1.5 lg:py-2 text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:opacity-90"
+              href="/chat?auth=signup"
+              className="px-3 lg:px-4 py-1.5 lg:py-2 text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 bg-linear-to-r from-emerald-600 to-green-600 text-white hover:opacity-90"
             >
               Sign Up
             </Link>
@@ -405,14 +405,14 @@ export function Navbar() {
               })}
               <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-200">
                 <Link
-                  href="/login"
+                  href="/chat?auth=login"
                   className="px-4 py-2.5 text-sm font-medium text-center rounded-lg transition-colors text-zinc-700 hover:bg-zinc-100"
                 >
                   Log In
                 </Link>
                 <Link
-                  href="/register"
-                  className="px-4 py-2.5 text-sm font-medium text-center bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg hover:opacity-90 transition-opacity"
+                  href="/chat?auth=signup"
+                  className="px-4 py-2.5 text-sm font-medium text-center bg-linear-to-r from-emerald-600 to-green-600 text-white rounded-lg hover:opacity-90 transition-opacity"
                 >
                   Sign Up
                 </Link>

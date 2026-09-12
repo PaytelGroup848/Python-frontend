@@ -64,7 +64,7 @@ export default function HomePage() {
           <div className="text-center">
             {/* Hero Title - Dark text for light background */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-              <span className="bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
+              <span className="bg-linear-to-r from-emerald-600 via-green-600 to-emerald-700 bg-clip-text text-transparent bg-size-[200%_auto] animate-gradient">
                 PATWATOLI AI
               </span>
               <br />
@@ -81,8 +81,8 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/register"
-                className="group inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-emerald-600 to-green-700 text-white rounded-2xl font-semibold hover:opacity-90 transition-opacity shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40"
+                href="/chat?auth=signup"
+                className="group inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-linear-to-r from-emerald-600 to-green-700 text-white rounded-2xl font-semibold hover:opacity-90 transition-opacity shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40"
               >
                 Get Started Free
                 <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />

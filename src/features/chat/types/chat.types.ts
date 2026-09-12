@@ -1,10 +1,11 @@
+export interface ChatMessageAttachment {
+  filename: string;
+  status?: string;
+}
+
 export interface ChatMessage {
-
   id: string | number;
-
-  role:
-    | "user"
-    | "assistant";
-
+  role: "user" | "assistant";
   content: string;
+  attachments?: ChatMessageAttachment[];
 }
