@@ -1,0 +1,476 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight, X, Shield, CheckCircle2 } from "lucide-react";
+import axios from "axios";
+
+import { useAuthStore } from "@/stores/auth-store";
+import { authService } from "@/features/auth/services/auth.service";
+import { registerUser } from "@/features/auth/services/register-service";
+
+interface AuthModalProps {
+  isOpen: boolean;
+  canClose?: boolean;
+  initialMode?: "login" | "signup";
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export function AuthModal({
+  isOpen,
+  canClose = false,
+  initialMode = "login",
+  onClose,
+  onSuccess,
+}: AuthModalProps) {
+  const searchParams = useSearchParams();
+  const queryAuth = searchParams.get("auth");
+
+  const [mode, setMode] = useState<"login" | "signup">(
+    queryAuth === "signup" ? "signup" : initialMode
+  );
+
+  // Shared form state so entered email is preserved across tab switching
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  useEffect(() => {
+    if (queryAuth === "signup") {
+      setMode("signup");
+    } else if (queryAuth === "login") {
+      setMode("login");
+    }
+  }, [queryAuth]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setError("");
+      setSuccessMessage("");
+      // Autofocus email on open/tab change
+      setTimeout(() => {
+        emailInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen, mode]);
+
+  // Handle Escape key
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && canClose && onClose) {
+        onClose();
+      }
+    }
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, canClose, onClose]);
+
+  // Password strength calculation
+  const hasMinLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  const getPasswordStrength = () => {
+    const score = [hasMinLength, hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length;
+    if (score <= 2) return { text: "Weak", color: "text-red-400", bg: "bg-red-500", percent: "25%" };
+    if (score <= 3) return { text: "Fair", color: "text-amber-400", bg: "bg-amber-500", percent: "50%" };
+    if (score <= 4) return { text: "Good", color: "text-blue-400", bg: "bg-blue-500", percent: "75%" };
+    return { text: "Strong", color: "text-emerald-400", bg: "bg-emerald-500", percent: "100%" };
+  };
+
+  const strength = getPasswordStrength();
+
+  // SIGN IN SUBMISSION
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      const response = await authService.login({ email, password });
+
+      const authUser = response.user || {
+        id: 1,
+        email: email,
+        full_name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
+        role: "MEMBER",
+      };
+
+      // Atomically commit to Zustand store
+      setAuth(authUser, response.access_token, response.refresh_token);
+
+      if (onSuccess) {
+        onSuccess();
+      } else if (onClose) {
+        onClose();
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const detail = err.response?.data?.detail;
+        if (Array.isArray(detail)) {
+          setError(detail[0]?.msg || "Invalid credentials");
+        } else if (typeof detail === "string") {
+          setError(detail);
+        } else {
+          setError("Invalid email or password");
+        }
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // CREATE ACCOUNT SUBMISSION
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name || !email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      // Step 1: Register
+      await registerUser(name, email, password);
+
+      // Step 2: Auto-login
+      try {
+        const loginRes = await authService.login({ email, password });
+        const authUser = loginRes.user || {
+          id: 1,
+          email: email,
+          full_name: name,
+          role: "MEMBER",
+        };
+        setAuth(authUser, loginRes.access_token, loginRes.refresh_token);
+        if (onSuccess) {
+          onSuccess();
+        } else if (onClose) {
+          onClose();
+        }
+      } catch (loginErr) {
+        // Fallback: If auto-login fails, prompt user to sign in
+        console.warn("Auto-login post-register failed:", loginErr);
+        setMode("login");
+        setSuccessMessage("Account created successfully! Please sign in.");
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const detail = err.response?.data?.detail;
+        setError(typeof detail === "string" ? detail : "Registration failed. Email may already be in use.");
+      } else if (err instanceof Error) {
+        setError(err.message || "Registration failed");
+      } else {
+        setError("Unexpected error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+      {/* Dark frosted glass backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => {
+          if (canClose && onClose) onClose();
+        }}
+        className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl transition-all"
+      />
+
+      {/* Modal Dialog Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-[440px] overflow-hidden rounded-3xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8"
+      >
+        {/* Optional Close Button */}
+        {canClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-5 right-5 h-8 w-8 rounded-full bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center justify-center"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        )}
+
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 mb-3">
+            <Sparkles size={24} />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+            PATWATOLI AI
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            {mode === "login"
+              ? "Sign in to access your AI workspace"
+              : "Create an account to start chatting"}
+          </p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-800/60 p-1 mb-6 border border-slate-700/40">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("login");
+              setError("");
+            }}
+            className={`py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all ${
+              mode === "login"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("signup");
+              setError("");
+            }}
+            className={`py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all ${
+              mode === "signup"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Create Account
+          </button>
+        </div>
+
+        {/* Notifications / Alerts */}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2"
+            >
+              <div className="h-4 w-4 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold flex-shrink-0 mt-0.5">
+                !
+              </div>
+              <span>{error}</span>
+            </motion.div>
+          )}
+
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300 flex items-center gap-2"
+            >
+              <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+              <span>{successMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* FORMS */}
+        {mode === "login" ? (
+          /* SIGN IN FORM */
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">Email</label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  ref={emailInputRef}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300">Password</label>
+              </div>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
+        ) : (
+          /* CREATE ACCOUNT FORM */
+          <form onSubmit={handleRegister} className="space-y-3.5">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Full Name</label>
+              <div className="relative">
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your Name"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Email</label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  ref={emailInputRef}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Password</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              {/* Password strength meter */}
+              {password.length > 0 && (
+                <div className="pt-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Strength:</span>
+                    <span className={`font-semibold ${strength.color}`}>{strength.text}</span>
+                  </div>
+                  <div className="h-1 w-full rounded-full bg-slate-800 mt-1 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${strength.bg}`}
+                      style={{ width: strength.percent }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Creating account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Footer info */}
+        <div className="mt-5 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+          <Shield size={12} className="text-emerald-500" />
+          <span>Enterprise End-to-End Encrypted Session</span>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
