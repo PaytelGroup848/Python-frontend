@@ -10,7 +10,7 @@ export async function getAssistants() {
         await apiClient.get<
             Assistant[]
         >(
-            "/assistants"
+            "/assistants/"
         );
 
     return data;
