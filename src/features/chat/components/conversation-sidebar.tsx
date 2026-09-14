@@ -27,6 +27,7 @@ import { useConversationStore } from "../stores/conversation-store";
 import { useChatStore } from "../stores/chat-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAssistants } from "@/features/playground/hooks/use-assistants";
+import { Assistant } from "@/features/playground/types/assistant";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserUsage } from "@/features/billing/services/billing.service";
 import { UpgradePlanModal } from "@/features/billing/components/upgrade-plan-modal";
@@ -72,11 +73,11 @@ export function ConversationSidebar() {
     router.push("/login");
   };
 
-  const activeAssistant = assistants.find((a) => a.id === activeAssistantId) || assistants[0];
+  const activeAssistant: Assistant | undefined = assistants.find((a: Assistant) => a.id === activeAssistantId) || assistants[0];
 
   useEffect(() => {
     if (assistants.length > 0 && activeAssistantId === null) {
-      const general = assistants.find((a) => a.code === "general") || assistants[0];
+      const general = assistants.find((a: Assistant) => a.code === "general") || assistants[0];
       if (general) {
         setActiveAssistantId(general.id);
       }
@@ -164,8 +165,7 @@ export function ConversationSidebar() {
 
   return (
     <aside
-      className={`relative flex h-full flex-col border-r border-slate-200 bg-white text-slate-900 select-none shadow-sm transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-72"
-        }`}
+      className={`relative flex h-full flex-col border-r border-slate-200 bg-white text-slate-900 select-none shadow-sm transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-72"}`}
     >
       {/* ASSISTANT SELECTOR & TOGGLE HEADER */}
       <div className="relative border-b border-slate-200/80 p-3.5 flex flex-col gap-2">
@@ -177,8 +177,7 @@ export function ConversationSidebar() {
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all ${isCollapsed ? "mx-auto" : "ml-auto"
-              }`}
+            className={`p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all ${isCollapsed ? "mx-auto" : "ml-auto"}`}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -318,11 +317,7 @@ export function ConversationSidebar() {
                     setMessages([]);
                   }
                 }}
-                className={`group flex items-center ${isCollapsed ? "justify-center p-2.5" : "justify-between px-3 py-2.5"
-                  } rounded-xl text-sm cursor-pointer transition-all duration-150 ${isActive
-                    ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200/80 shadow-sm"
-                    : "text-slate-600 border border-transparent hover:bg-slate-100 hover:text-slate-900"
-                  }`}
+                className={`group flex items-center ${isCollapsed ? "justify-center p-2.5" : "justify-between px-3 py-2.5"} rounded-xl text-sm cursor-pointer transition-all duration-150 ${isActive ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200/80 shadow-sm" : "text-slate-600 border border-transparent hover:bg-slate-100 hover:text-slate-900"}`}
                 title={isCollapsed ? conversation.title || "Untitled Chat" : undefined}
               >
                 {!isCollapsed ? (
