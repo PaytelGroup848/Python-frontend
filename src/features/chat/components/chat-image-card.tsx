@@ -29,7 +29,7 @@ export function ChatImageCard({ src, alt = "AI Generated Artwork" }: ChatImageCa
   const [copied, setCopied] = useState(false);
 
   // Studio states
-  const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const backendBase = process.env.NEXT_PUBLIC_API_URL ||"https://api.patwatoliai.com" || "http://localhost:8000";
   const initialResolvedUrl = src.startsWith("http") ? src : `${backendBase}${src.startsWith("/") ? "" : "/"}${src}`;
   const [currentUrl, setCurrentUrl] = useState(initialResolvedUrl);
   const [transparentUrl, setTransparentUrl] = useState<string | null>(null);

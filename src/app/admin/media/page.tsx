@@ -36,7 +36,7 @@ export default function AdminMediaPage() {
 
   const { mutate: deleteMedia, isPending: isDeleting } = useDeleteAdminMedia();
 
-  const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const backendBase = process.env.NEXT_PUBLIC_API_URL || "https://api.patwatoliai.com" || "http://localhost:8000";
 
   const handleCopyPrompt = async (id: number, text: string) => {
     try {

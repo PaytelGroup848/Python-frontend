@@ -12,7 +12,8 @@ class ModelService {
     const response =
       await axios.get(
 
-        "http://localhost:8000/models"
+        // "http://localhost:8000/models"
+        "https://api.patwatoliai.com/models"
       );
 
     return response.data;
@@ -28,7 +29,8 @@ class ModelService {
     const response =
         await axios.post(
 
-            "http://localhost:8000/models",
+            // "http://localhost:8000/models",
+            "https://api.patwatoliai.com/models",
 
             payload
         );
@@ -43,7 +45,8 @@ class ModelService {
     const response =
       await axios.delete(
 
-        `http://localhost:8000/models/${modelName}`
+        // `http://localhost:8000/models/${modelName}`
+        `https://api.patwatoliai.com/models/${modelName}`
       );
 
     return response.data;
@@ -57,7 +60,8 @@ class ModelService {
     const response =
       await axios.patch(
 
-        `http://localhost:8000/models/${modelName}`,
+        // `http://localhost:8000/models/${modelName}`,
+        `https://api.patwatoliai.com/models/${modelName}`,
 
         payload
       );

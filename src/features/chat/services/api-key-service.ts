@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/auth-store";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.patwatoliai.com" ||"http://localhost:8000";
 
 export interface BackendApiKey {
   id: number | string;

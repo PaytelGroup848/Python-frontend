@@ -141,7 +141,7 @@ export function ApiKeysModal({ isOpen, onClose }: ApiKeysModalProps) {
 
 
 
-  const curlCode = `curl http://localhost:8000/v1/chat/completions \\
+  const curlCode = `curl "https://api.patwatoliai.com/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${generatedKey || keys[0]?.key || "YOUR_API_KEY"}" \\
   -d '{
@@ -153,7 +153,7 @@ export function ApiKeysModal({ isOpen, onClose }: ApiKeysModalProps) {
 
 client = openai.OpenAI(
     api_key="${generatedKey || keys[0]?.key || "YOUR_API_KEY"}",
-    base_url="http://localhost:8000/v1"
+    base_url=""https://api.patwatoliai.com/v1"
 )
 
 response = client.chat.completions.create(
