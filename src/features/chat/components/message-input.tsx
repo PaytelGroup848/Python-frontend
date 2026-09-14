@@ -276,14 +276,14 @@ export function MessageInput({
         // ---------- SINGLE LINE CAPSULE (EXACT MATCH TO SCREENSHOT) ----------
         <div
           className="
-            relative flex items-center w-full rounded-full
+            relative flex items-center w-full rounded-2xl sm:rounded-full
             border border-zinc-200/90
-            bg-white px-3 py-2 gap-2
+            bg-white px-2.5 sm:px-3 py-1.5 sm:py-2 gap-1.5 sm:gap-2
             shadow-[0_2px_10px_rgba(0,0,0,0.04)]
             hover:border-zinc-300
             focus-within:border-zinc-400
             focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
-            transition-all duration-150 min-h-13
+            transition-all duration-150 min-h-12 sm:min-h-13
           "
         >
           {/* LEFT: PLUS (+) BUTTON WITH DROPDOWN */}
@@ -397,28 +397,28 @@ export function MessageInput({
             onKeyDown={handleKeyDown}
             placeholder="Ask anything"
             className="
-              flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0
-              text-[15px] text-zinc-800 placeholder:text-zinc-400
-              resize-none overflow-hidden py-1.5 px-2 leading-relaxed max-h-40
+              min-w-0 flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0
+              text-[14px] sm:text-[15px] text-zinc-800 placeholder:text-zinc-400
+              resize-none overflow-hidden py-1 sm:py-1.5 px-1.5 sm:px-2 leading-relaxed max-h-40
             "
           />
 
           {/* RIGHT CONTROLS: Think, Mic, and Blue Waveform / Send Button */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* THINK BUTTON */}
             <button
               type="button"
               onClick={() => setThink((prev) => !prev)}
               aria-label="Toggle Reasoning"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[13px] transition-colors cursor-pointer select-none",
+                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-[13px] transition-colors cursor-pointer select-none shrink-0",
                 think
                   ? "bg-zinc-100 text-zinc-900 font-medium"
                   : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100/60 font-normal"
               )}
             >
               <Brain className="h-4 w-4 stroke-[1.8]" />
-              <span>Think</span>
+              <span className="hidden sm:inline">Think</span>
             </button>
 
             {/* MIC BUTTON */}
@@ -621,14 +621,14 @@ export function MessageInput({
                 onClick={() => setThink((prev) => !prev)}
                 aria-label="Toggle Reasoning"
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[13px] transition-colors cursor-pointer select-none",
+                  "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-[13px] transition-colors cursor-pointer select-none",
                   think
                     ? "bg-zinc-100 text-zinc-900 font-medium"
                     : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100/60 font-normal"
                 )}
               >
                 <Brain className="h-4 w-4 stroke-[1.8]" />
-                <span>Think</span>
+                <span className="hidden sm:inline">Think</span>
               </button>
 
               {/* MIC BUTTON */}

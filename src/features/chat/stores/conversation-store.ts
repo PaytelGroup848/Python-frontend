@@ -15,6 +15,12 @@ interface ConversationState {
 
   activeAssistantId: number | null;
 
+  isMobileSidebarOpen: boolean;
+
+  setMobileSidebarOpen: (
+    open: boolean
+  ) => void;
+
   setActiveAssistantId: (
     assistantId: number | null
   ) => void;
@@ -40,6 +46,15 @@ useConversationStore =
         null,
 
       activeAssistantId: null,
+
+      isMobileSidebarOpen: false,
+
+      setMobileSidebarOpen: (
+        open
+      ) =>
+        set({
+          isMobileSidebarOpen: open,
+        }),
 
       setConversations: (
         conversations

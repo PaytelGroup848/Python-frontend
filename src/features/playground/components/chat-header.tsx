@@ -1,34 +1,54 @@
 "use client";
 
-import { Bot, Sparkles } from "lucide-react";
+import { Bot, Sparkles, Menu, Plus } from "lucide-react";
 import { useAssistants } from "../hooks/use-assistants";
 import { useConversationStore } from "@/features/chat/stores/conversation-store";
+import { useChatStore } from "@/features/chat/stores/chat-store";
 
 export function ChatHeader() {
   const activeAssistantId = useConversationStore((state) => state.activeAssistantId);
   const conversations = useConversationStore((state) => state.conversations);
   const activeConversationId = useConversationStore((state) => state.activeConversationId);
+  const setActiveConversation = useConversationStore((state) => state.setActiveConversation);
+  const setMobileSidebarOpen = useConversationStore((state) => state.setMobileSidebarOpen);
+  const setMessages = useChatStore((state) => state.setMessages);
   const { data: assistants = [] } = useAssistants();
 
   const assistant = assistants.find((item) => item.id === activeAssistantId);
   const conversation = conversations.find((item) => item.id === activeConversationId);
 
+  const handleNewChat = () => {
+    setActiveConversation(null);
+    setMessages([]);
+  };
+
   return (
-    <header className="flex h-16 min-h-[64px] items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 py-2.5 backdrop-blur-2xl text-slate-900 shadow-sm z-10">
-      <div className="flex items-center gap-3.5 overflow-hidden">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30">
-          <Bot size={20} />
+    <header className="flex h-14 md:h-16 min-h-[56px] md:min-h-[64px] items-center justify-between border-b border-slate-200/80 bg-white/95 px-3 sm:px-6 py-2 backdrop-blur-2xl text-slate-900 shadow-xs z-10">
+      <div className="flex items-center gap-2 sm:gap-3.5 overflow-hidden min-w-0">
+        {/* MOBILE HAMBURGER BUTTON (DRAWER TOGGLE) */}
+        <button
+          onClick={() => setMobileSidebarOpen(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors md:hidden shrink-0 cursor-pointer"
+          title="Open Menu"
+          aria-label="Open Menu"
+        >
+          <Menu size={20} />
+        </button>
+
+        <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30">
+          <Bot size={18} className="sm:size-5" />
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-slate-900 truncate">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 truncate">
               {assistant?.name ?? "General Chat"}
             </h2>
-            <span className="shrink-0 flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200 shadow-xs">
-              <Sparkles size={11} className="text-emerald-600" /> Active Model
+            <span className="shrink-0 flex items-center gap-1 rounded-full bg-emerald-50 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 border border-emerald-200 shadow-xs">
+              <Sparkles size={11} className="text-emerald-600" />
+              <span className="hidden sm:inline">Active Model</span>
             </span>
           </div>
-          <p className="text-xs text-slate-500 truncate max-w-md">
+          <p className="text-[11px] sm:text-xs text-slate-500 truncate max-w-[150px] sm:max-w-md hidden xs:block">
             {assistant?.description ?? "Universal AI Assistant"}
           </p>
         </div>
@@ -77,9 +97,19 @@ export function ChatHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <p className="text-xs font-bold text-slate-800">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* MOBILE NEW CHAT (+) BUTTON */}
+        <button
+          onClick={handleNewChat}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors md:hidden cursor-pointer"
+          title="New Conversation"
+          aria-label="New Conversation"
+        >
+          <Plus size={20} />
+        </button>
+
+        <div className="text-right hidden sm:block">
+          <p className="text-xs font-bold text-slate-800 truncate max-w-[160px]">
             {conversation?.title ?? "New Chat"}
           </p>
           <p className="flex items-center justify-end gap-1.5 text-[11px] text-emerald-600 font-semibold">

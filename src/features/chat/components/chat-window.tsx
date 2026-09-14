@@ -425,7 +425,7 @@ export function ChatWindow() {
 
       {isEmpty ? (
         // ---------- Landing / hero state ----------
-        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-7 px-6">
+        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-7 px-4 sm:px-6">
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 border border-emerald-200 text-xs font-semibold text-emerald-700 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
             <span>Patwatoli AI Workspace</span>
@@ -435,12 +435,14 @@ export function ChatWindow() {
              {displayName}, <span className="text-emerald-600">What&apos;s the vision?</span>
           </h1>
 
-          <MessageInput
-            onSend={handleSend}
-            onStop={handleStop}
-            isStreaming={isStreaming}
-            disabled={isStreaming}
-          />
+          <div className="w-full max-w-2xl px-1 sm:px-0">
+            <MessageInput
+              onSend={handleSend}
+              onStop={handleStop}
+              isStreaming={isStreaming}
+              disabled={isStreaming}
+            />
+          </div>
         </div>
       ) : (
         // ---------- Active conversation state ----------
@@ -448,7 +450,7 @@ export function ChatWindow() {
           <div className="relative z-10 flex h-full w-full overflow-hidden">
             {/* LEFT COLUMN: CHAT WINDOW */}
             <div className="flex flex-col flex-1 h-full overflow-y-auto w-full lg:w-1/2 border-r border-slate-200/80">
-              <div className="flex-1 px-4 pt-6 pb-4 max-w-3xl mx-auto w-full">
+              <div className="flex-1 px-3 sm:px-4 pt-4 sm:pt-6 pb-4 max-w-3xl mx-auto w-full">
                 <MessageList
                   messages={displayedMessages}
                   onEditMessage={handleEditMessage}
@@ -460,7 +462,7 @@ export function ChatWindow() {
                 <div ref={bottomRef} />
               </div>
 
-              <div className="flex justify-center px-4 pb-6 max-w-3xl mx-auto w-full">
+              <div className="flex justify-center px-2 sm:px-4 pb-3 sm:pb-6 max-w-3xl mx-auto w-full">
                 <MessageInput
                   onSend={handleSend}
                   onStop={handleStop}
@@ -484,7 +486,7 @@ export function ChatWindow() {
           </div>
         ) : (
           <>
-            <div className="relative z-10 flex-1 px-6 pt-6 pb-4 max-w-4xl mx-auto w-full">
+            <div className="relative z-10 flex-1 px-3 sm:px-6 pt-4 sm:pt-6 pb-4 max-w-4xl mx-auto w-full">
               <MessageList
                 messages={displayedMessages}
                 onEditMessage={handleEditMessage}
@@ -496,7 +498,7 @@ export function ChatWindow() {
               <div ref={bottomRef} />
             </div>
 
-            <div className="relative z-10 flex justify-center px-6 pb-6 max-w-4xl mx-auto w-full">
+            <div className="relative z-10 flex justify-center px-2 sm:px-6 pb-3 sm:pb-6 max-w-4xl mx-auto w-full">
               <MessageInput
                 onSend={handleSend}
                 onStop={handleStop}

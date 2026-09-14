@@ -14,6 +14,7 @@ import {
   PanelLeftOpen,
   MessageSquare,
   Key,
+  X,
 } from "lucide-react";
 
 import {
@@ -47,6 +48,8 @@ export function ConversationSidebar() {
   const setMessages = useChatStore((state) => state.setMessages);
   const activeAssistantId = useConversationStore((state) => state.activeAssistantId);
   const setActiveAssistantId = useConversationStore((state) => state.setActiveAssistantId);
+  const isMobileSidebarOpen = useConversationStore((state) => state.isMobileSidebarOpen);
+  const setMobileSidebarOpen = useConversationStore((state) => state.setMobileSidebarOpen);
 
   const { data: assistants = [] } = useAssistants();
   const [isAssistantDropdownOpen, setIsAssistantDropdownOpen] = useState(false);
@@ -69,6 +72,7 @@ export function ConversationSidebar() {
   const userAvatarInitial = userName.charAt(0).toUpperCase();
 
   const handleLogout = () => {
+    setMobileSidebarOpen(false);
     logout();
     router.push("/login");
   };
@@ -83,6 +87,13 @@ export function ConversationSidebar() {
       }
     }
   }, [assistants, activeAssistantId, setActiveAssistantId]);
+
+  // When opening mobile drawer, ensure it is in expanded view
+  useEffect(() => {
+    if (isMobileSidebarOpen && isCollapsed) {
+      setIsCollapsed(false);
+    }
+  }, [isMobileSidebarOpen, isCollapsed]);
 
   /* =========================
      LOAD CONVERSATIONS
@@ -126,6 +137,7 @@ export function ConversationSidebar() {
   ========================= */
 
   async function handleNewChat() {
+    setMobileSidebarOpen(false);
     try {
       const conversation = await createConversation(activeAssistantId);
       const updatedConversations = await getConversations(activeAssistantId);
@@ -164,106 +176,131 @@ export function ConversationSidebar() {
   );
 
   return (
-    <aside
-      className={`relative flex h-full flex-col border-r border-slate-200 bg-white text-slate-900 select-none shadow-sm transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-72"}`}
-    >
-      {/* ASSISTANT SELECTOR & TOGGLE HEADER */}
-      <div className="relative border-b border-slate-200/80 p-3.5 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 px-1">
-              Patwatoli AI Assistant
-            </label>
-          )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all ${isCollapsed ? "mx-auto" : "ml-auto"}`}
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          </button>
-        </div>
+    <>
+      {/* MOBILE BACKDROP OVERLAY (TAP TO CLOSE) */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 md:hidden animate-in fade-in"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-        <div className="relative">
-          {!isCollapsed ? (
-            <button
-              onClick={() => setIsAssistantDropdownOpen(!isAssistantDropdownOpen)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-emerald-500 hover:bg-emerald-50/50 shadow-sm"
-            >
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm shadow-emerald-600/30">
-                  <Bot size={16} />
-                </div>
-                <div className="truncate">
-                  <div className="text-sm font-bold text-slate-900 truncate">
-                    {activeAssistant?.name || "General Chat"}
-                  </div>
-                  <div className="text-[11px] font-medium text-slate-500 truncate">
-                    {activeAssistant?.description || "Universal AI Assistant"}
-                  </div>
-                </div>
-              </div>
-              <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isAssistantDropdownOpen ? "rotate-180 text-emerald-600" : ""}`} />
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsAssistantDropdownOpen(!isAssistantDropdownOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30 mx-auto transition hover:scale-105"
-              title={activeAssistant?.name || "General Chat"}
-            >
-              <Bot size={20} />
-            </button>
-          )}
-
-          {/* DROPDOWN MENU */}
-          {isAssistantDropdownOpen && (
-            <>
-              {/* Backdrop dismiss */}
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setIsAssistantDropdownOpen(false)}
-              />
-              <div
-                className={`absolute z-50 max-h-80 overflow-y-auto space-y-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl backdrop-blur-xl ${
-                  isCollapsed ? "left-full ml-2 top-0 w-64" : "left-0 right-0 top-full mt-1.5"
-                }`}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-slate-200 bg-white text-slate-900 select-none shadow-2xl transition-transform duration-300 ease-in-out md:relative md:z-0 md:shadow-sm md:translate-x-0 ${
+          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        } w-72 ${isCollapsed ? "md:w-20" : "md:w-72"}`}
+      >
+        {/* ASSISTANT SELECTOR & TOGGLE HEADER */}
+        <div className="relative border-b border-slate-200/80 p-3.5 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            {!isCollapsed && (
+              <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 px-1">
+                Patwatoli AI Assistant
+              </label>
+            )}
+            <div className="flex items-center gap-1 ml-auto">
+              {/* DESKTOP COLLAPSE BUTTON */}
+              <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className={`hidden md:flex p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all ${isCollapsed ? "mx-auto" : ""}`}
+                title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
               >
-                {assistants.length === 0 ? (
-                  <div className="px-3 py-3 text-center text-xs text-slate-500 font-medium">
-                    Loading assistants...
-                  </div>
-                ) : (
-                  assistants.map((assistant) => (
-                    <button
-                      key={assistant.id}
-                      onClick={() => {
-                        setActiveAssistantId(assistant.id);
-                        setActiveConversation(null);
-                        setMessages([]);
-                        setIsAssistantDropdownOpen(false);
-                      }}
-                      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                        activeAssistantId === assistant.id
-                          ? "bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/80 shadow-xs"
-                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                      }`}
-                    >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600/10 text-emerald-700 font-bold">
-                        <Bot size={15} />
-                      </div>
-                      <div className="truncate">
-                        <div className="font-bold text-slate-900 truncate">{assistant.name}</div>
-                        <div className="text-[10px] text-slate-500 truncate">{assistant.description}</div>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-        </div>
+                {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              </button>
+              {/* MOBILE CLOSE (X) BUTTON */}
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="flex md:hidden p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+                title="Close Menu"
+                aria-label="Close Menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
 
-      </div>
+          <div className="relative">
+            {!isCollapsed ? (
+              <button
+                onClick={() => setIsAssistantDropdownOpen(!isAssistantDropdownOpen)}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-emerald-500 hover:bg-emerald-50/50 shadow-sm"
+              >
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm shadow-emerald-600/30">
+                    <Bot size={16} />
+                  </div>
+                  <div className="truncate">
+                    <div className="text-sm font-bold text-slate-900 truncate">
+                      {activeAssistant?.name || "General Chat"}
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-500 truncate">
+                      {activeAssistant?.description || "Universal AI Assistant"}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isAssistantDropdownOpen ? "rotate-180 text-emerald-600" : ""}`} />
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsAssistantDropdownOpen(!isAssistantDropdownOpen)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30 mx-auto transition hover:scale-105"
+                title={activeAssistant?.name || "General Chat"}
+              >
+                <Bot size={20} />
+              </button>
+            )}
+
+            {/* DROPDOWN MENU */}
+            {isAssistantDropdownOpen && (
+              <>
+                {/* Backdrop dismiss */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsAssistantDropdownOpen(false)}
+                />
+                <div
+                  className={`absolute z-50 max-h-80 overflow-y-auto space-y-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl backdrop-blur-xl ${
+                    isCollapsed ? "left-full ml-2 top-0 w-64" : "left-0 right-0 top-full mt-1.5"
+                  }`}
+                >
+                  {assistants.length === 0 ? (
+                    <div className="px-3 py-3 text-center text-xs text-slate-500 font-medium">
+                      Loading assistants...
+                    </div>
+                  ) : (
+                    assistants.map((assistant) => (
+                      <button
+                        key={assistant.id}
+                        onClick={() => {
+                          setActiveAssistantId(assistant.id);
+                          setActiveConversation(null);
+                          setMessages([]);
+                          setIsAssistantDropdownOpen(false);
+                          setMobileSidebarOpen(false);
+                        }}
+                        className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                          activeAssistantId === assistant.id
+                            ? "bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/80 shadow-xs"
+                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600/10 text-emerald-700 font-bold">
+                          <Bot size={15} />
+                        </div>
+                        <div className="truncate">
+                          <div className="font-bold text-slate-900 truncate">{assistant.name}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{assistant.description}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+        </div>
 
       {/* NEW CHAT ACTION */}
       <div className="p-3.5">
@@ -307,6 +344,7 @@ export function ConversationSidebar() {
               <div
                 key={conversation.id}
                 onClick={async () => {
+                  setMobileSidebarOpen(false);
                   try {
                     const messages = await getConversationMessages(conversation.id);
                     setActiveConversation(conversation.id);
@@ -349,7 +387,10 @@ export function ConversationSidebar() {
           <>
             {/* UPGRADE PLAN BUTTON */}
             <button
-              onClick={() => setIsUpgradeOpen(true)}
+              onClick={() => {
+                setIsUpgradeOpen(true);
+                setMobileSidebarOpen(false);
+              }}
               className="flex w-full items-center justify-between rounded-xl bg-white border border-slate-200 p-2.5 transition hover:border-emerald-500 hover:bg-emerald-50/30 shadow-xs cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
@@ -378,7 +419,10 @@ export function ConversationSidebar() {
 
             {/* DEVELOPER API KEYS */}
             <button
-              onClick={() => setIsApiKeysOpen(true)}
+              onClick={() => {
+                setIsApiKeysOpen(true);
+                setMobileSidebarOpen(false);
+              }}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 hover:text-slate-950 hover:bg-slate-200/70 transition cursor-pointer"
             >
               <Key size={16} className="text-slate-700" />
@@ -387,7 +431,10 @@ export function ConversationSidebar() {
 
             {/* PLATFORM SETTINGS */}
             <button
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => {
+                setIsSettingsOpen(true);
+                setMobileSidebarOpen(false);
+              }}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 hover:text-slate-950 hover:bg-slate-200/70 transition cursor-pointer"
             >
               <Settings size={16} className="text-slate-700" />
@@ -397,7 +444,10 @@ export function ConversationSidebar() {
         ) : (
           <>
             <button
-              onClick={() => setIsUpgradeOpen(true)}
+              onClick={() => {
+                setIsUpgradeOpen(true);
+                setMobileSidebarOpen(false);
+              }}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-emerald-600 shadow-xs hover:border-emerald-400 hover:bg-emerald-50 mx-auto transition cursor-pointer"
               title={`Upgrade Plan (${currentPlanName})`}
             >
@@ -405,7 +455,10 @@ export function ConversationSidebar() {
             </button>
 
             <button
-              onClick={() => setIsApiKeysOpen(true)}
+              onClick={() => {
+                setIsApiKeysOpen(true);
+                setMobileSidebarOpen(false);
+              }}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs hover:text-slate-900 hover:bg-slate-100 mx-auto transition cursor-pointer"
               title="Developer API Keys"
             >
@@ -413,7 +466,10 @@ export function ConversationSidebar() {
             </button>
 
             <button
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => {
+                setIsSettingsOpen(true);
+                setMobileSidebarOpen(false);
+              }}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs hover:text-slate-900 hover:bg-slate-100 mx-auto transition cursor-pointer"
               title="Platform Settings"
             >
@@ -462,5 +518,6 @@ export function ConversationSidebar() {
       <ApiKeysModal isOpen={isApiKeysOpen} onClose={() => setIsApiKeysOpen(false)} />
       <UpgradePlanModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
     </aside>
+  </>
   );
 }
