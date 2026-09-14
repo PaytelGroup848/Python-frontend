@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import {
@@ -46,6 +47,7 @@ import {
 
 
 export default function DatasetsPage() {
+function DatasetsContent() {
 
    
 
@@ -515,4 +517,12 @@ export default function DatasetsPage() {
 
     );
 
+}
+
+export default function DatasetsPage() {
+    return (
+        <Suspense fallback={<div className="flex h-64 w-full items-center justify-center text-sm text-slate-500">Loading datasets...</div>}>
+            <DatasetsContent />
+        </Suspense>
+    );
 }
