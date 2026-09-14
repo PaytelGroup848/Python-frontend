@@ -46,7 +46,6 @@ import {
 } from "@/features/datasets/components";
 
 
-export default function DatasetsPage() {
 function DatasetsContent() {
 
    
