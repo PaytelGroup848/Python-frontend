@@ -11,7 +11,7 @@ import {
 import { v4 as uuid }
   from "uuid";
 
-import { Sparkles } from "lucide-react";
+import { Sparkles, Image as ImageIcon, PenLine, Globe, Code2 } from "lucide-react";
 
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
@@ -95,9 +95,20 @@ export function ChatWindow() {
   const clearMessages = useChatStore((state) => state.clearMessages);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const prevMessagesLengthRef = useRef(messages.length);
   const isManuallyStoppedRef = useRef(false);
   const streamingConversationIdRef = useRef<number | string | null>(null);
   const activeRequestIdRef = useRef<string | null>(null);
+  const [prefillValue, setPrefillValue] = useState<string>("");
+
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceToBottom <= 160;
+  }, []);
 
   useEffect(() => {
     clearMessages();
@@ -345,16 +356,33 @@ export function ChatWindow() {
 
 
   useEffect(() => {
+    const isNewMessage = messages.length > prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+
+    // If a new message was added (user message sent or new assistant placeholder), always scroll to bottom
+    if (isNewMessage) {
+      isNearBottomRef.current = true;
+      bottomRef.current?.scrollIntoView({
+        behavior: isStreaming ? "auto" : "smooth",
+      });
+      return;
+    }
+
+    // During streaming token chunks: ONLY auto-scroll if user is already near bottom!
+    // If user intentionally scrolled up to read history, DO NOT forcibly pull them down.
     if (isStreaming) {
-      // Instant auto-scroll during live token streaming to eliminate frame collision & screen jitter
-      bottomRef.current?.scrollIntoView({
-        behavior: "auto",
-      });
+      if (isNearBottomRef.current) {
+        bottomRef.current?.scrollIntoView({
+          behavior: "auto",
+        });
+      }
     } else {
-      // Smooth scroll for completed responses and initial user messages
-      bottomRef.current?.scrollIntoView({
-        behavior: "smooth",
-      });
+      // When streaming finishes, smooth scroll only if user was near bottom
+      if (isNearBottomRef.current) {
+        bottomRef.current?.scrollIntoView({
+          behavior: "smooth",
+        });
+      }
     }
   }, [messages, isStreaming]);
 
@@ -472,10 +500,33 @@ export function ChatWindow() {
 
   const displayName = getGreeting();
 
+  const quickSuggestions = [
+    {
+      icon: ImageIcon,
+      label: "Create an image or sticker",
+      prompt: "Create a detailed image of ",
+    },
+    {
+      icon: PenLine,
+      label: "Write or edit",
+      prompt: "Help me write ",
+    },
+    {
+      icon: Globe,
+      label: "Search the web",
+      prompt: "Search the web for ",
+    },
+    {
+      icon: Code2,
+      label: "Code or debug",
+      prompt: "Write a complete web app for ",
+    },
+  ];
+
   return (
-    <div className="relative flex h-full w-full flex-col overflow-y-auto bg-white text-slate-900">
+    <div className="relative flex h-full w-full flex-col overflow-hidden bg-white text-slate-900">
       {/* Patwatoli AI Emerald Green Wave Background */}
-      <div className="absolute inset-0 -z-10 overflow-hidden bg-white">
+      <div className="absolute inset-0 -z-10 overflow-hidden bg-white pointer-events-none">
         <div className="absolute -top-32 left-1/2 h-[520px] w-[1100px] -translate-x-1/2 rounded-full bg-emerald-200/40 blur-[120px]" />
         <div className="absolute top-1/4 -left-40 h-[420px] w-[720px] rounded-full bg-teal-200/30 blur-[130px]" />
         <div className="absolute bottom-[-160px] left-[-80px] h-[520px] w-[820px] rounded-full bg-emerald-300/30 blur-[120px]" />
@@ -483,8 +534,8 @@ export function ChatWindow() {
       </div>
 
       {isEmpty ? (
-        // ---------- Landing / hero state ----------
-        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-7 px-4 sm:px-6">
+        // ---------- Landing / hero state (ChatGPT Style) ----------
+        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 sm:px-6 overflow-y-auto">
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 border border-emerald-200 text-xs font-semibold text-emerald-700 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
             <span>Patwatoli AI Workspace</span>
@@ -500,7 +551,27 @@ export function ChatWindow() {
               onStop={handleStop}
               isStreaming={isStreaming}
               disabled={isStreaming}
+              prefillValue={prefillValue}
+              onClearPrefill={() => setPrefillValue("")}
             />
+          </div>
+
+          {/* Quick Suggestions Matching Screenshot */}
+          <div className="flex flex-col items-start w-full max-w-2xl px-2 gap-1 sm:gap-1.5 pt-1">
+            {quickSuggestions.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setPrefillValue(item.prompt)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] sm:text-[14px] text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-all cursor-pointer select-none"
+                >
+                  <Icon className="h-4 w-4 text-zinc-400 shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -508,31 +579,46 @@ export function ChatWindow() {
         previewData ? (
           <div className="relative z-10 flex h-full w-full overflow-hidden">
             {/* LEFT COLUMN: CHAT WINDOW */}
-            <div className="flex flex-col flex-1 h-full overflow-y-auto w-full lg:w-1/2 border-r border-slate-200/80">
-              <div className="flex-1 px-3 sm:px-4 pt-4 sm:pt-6 pb-4 max-w-3xl mx-auto w-full">
-                <MessageList
-                  messages={displayedMessages}
-                  onEditMessage={handleEditMessage}
-                  onRunPreview={(code, lang) => {
-                    setIsClosedByUser(false);
-                    setPreviewData({ code, language: lang });
-                  }}
-                />
-                <div ref={bottomRef} />
+            <div className="flex flex-col flex-1 h-full overflow-hidden w-full lg:w-1/2 border-r border-slate-200/80">
+              {/* Message History Scroller */}
+              <div
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-2 w-full"
+              >
+                <div className="max-w-3xl mx-auto w-full">
+                  <MessageList
+                    messages={displayedMessages}
+                    onEditMessage={handleEditMessage}
+                    onRunPreview={(code, lang) => {
+                      setIsClosedByUser(false);
+                      setPreviewData({ code, language: lang });
+                    }}
+                  />
+                  <div ref={bottomRef} className="h-2" />
+                </div>
               </div>
 
-              <div className="flex justify-center px-2 sm:px-4 pb-3 sm:pb-6 max-w-3xl mx-auto w-full">
-                <MessageInput
-                  onSend={handleSend}
-                  onStop={handleStop}
-                  isStreaming={isStreaming}
-                  disabled={isStreaming}
-                />
+              {/* Fixed Bottom Input Dock */}
+              <div className="shrink-0 w-full px-2 sm:px-4 pb-3 sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
+                <div className="max-w-3xl mx-auto w-full">
+                  <MessageInput
+                    onSend={handleSend}
+                    onStop={handleStop}
+                    isStreaming={isStreaming}
+                    disabled={isStreaming}
+                    prefillValue={prefillValue}
+                    onClearPrefill={() => setPrefillValue("")}
+                  />
+                  <p className="text-center text-[11px] text-slate-400 mt-2 select-none">
+                    Patwatoli AI can make mistakes. Verify important info.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* RIGHT COLUMN: LIVE APP PREVIEW PANEL */}
-            <div className="hidden lg:block w-1/2 h-full">
+            <div className="hidden lg:block w-1/2 h-full overflow-hidden">
               <CodePreviewPanel
                 code={previewData.code}
                 language={previewData.language}
@@ -544,28 +630,43 @@ export function ChatWindow() {
             </div>
           </div>
         ) : (
-          <>
-            <div className="relative z-10 flex-1 px-3 sm:px-6 pt-4 sm:pt-6 pb-4 max-w-4xl mx-auto w-full">
-              <MessageList
-                messages={displayedMessages}
-                onEditMessage={handleEditMessage}
-                onRunPreview={(code, lang) => {
-                  setIsClosedByUser(false);
-                  setPreviewData({ code, language: lang });
-                }}
-              />
-              <div ref={bottomRef} />
+          <div className="relative z-10 flex flex-col flex-1 h-full w-full overflow-hidden">
+            {/* Message History Scroller */}
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-2 w-full"
+            >
+              <div className="max-w-4xl mx-auto w-full">
+                <MessageList
+                  messages={displayedMessages}
+                  onEditMessage={handleEditMessage}
+                  onRunPreview={(code, lang) => {
+                    setIsClosedByUser(false);
+                    setPreviewData({ code, language: lang });
+                  }}
+                />
+                <div ref={bottomRef} className="h-2" />
+              </div>
             </div>
 
-            <div className="relative z-10 flex justify-center px-2 sm:px-6 pb-3 sm:pb-6 max-w-4xl mx-auto w-full">
-              <MessageInput
-                onSend={handleSend}
-                onStop={handleStop}
-                isStreaming={isStreaming}
-                disabled={isStreaming}
-              />
+            {/* Fixed Bottom Input Dock */}
+            <div className="shrink-0 w-full px-2 sm:px-6 pb-3 sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
+              <div className="max-w-4xl mx-auto w-full">
+                <MessageInput
+                  onSend={handleSend}
+                  onStop={handleStop}
+                  isStreaming={isStreaming}
+                  disabled={isStreaming}
+                  prefillValue={prefillValue}
+                  onClearPrefill={() => setPrefillValue("")}
+                />
+                <p className="text-center text-[11px] text-slate-400 mt-2 select-none">
+                  Patwatoli AI can make mistakes. Verify important info.
+                </p>
+              </div>
             </div>
-          </>
+          </div>
         )
       )}
       <UpgradePlanModal

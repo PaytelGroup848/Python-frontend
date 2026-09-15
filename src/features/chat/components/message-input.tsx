@@ -58,6 +58,8 @@ interface MessageInputProps {
   onStop?: () => void;
   isStreaming?: boolean;
   disabled?: boolean;
+  prefillValue?: string;
+  onClearPrefill?: () => void;
 }
 
 export function MessageInput({
@@ -65,6 +67,8 @@ export function MessageInput({
   onStop,
   isStreaming = false,
   disabled = false,
+  prefillValue,
+  onClearPrefill,
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [aspectRatio, setAspectRatio] = useState<"1:1" | "16:9" | "9:16">("1:1");
@@ -76,6 +80,21 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [uploading, setUploading] = useState(false);
   const stopCooldownUntilRef = useRef<number>(0);
+
+  // One-shot controlled prefill: adopt value, notify parent to clear prop, and focus textarea
+  useEffect(() => {
+    if (prefillValue) {
+      setMessage(prefillValue);
+      onClearPrefill?.();
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const len = prefillValue.length;
+          textareaRef.current.setSelectionRange(len, len);
+        }
+      });
+    }
+  }, [prefillValue, onClearPrefill]);
 
   const {
     isRecording,
