@@ -379,55 +379,45 @@ send(data: unknown) {
   ========================= */
 
   disconnect() {
+    this.manuallyClosed = true;
 
-  if (
-    this.socket?.readyState ===
-    WebSocket.CONNECTING
-  ) {
-    return;
-  }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
 
-  this.manuallyClosed = true;
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
 
-  if (
-    this.reconnectTimer
-  ) {
+    if (this.socket) {
+      const sock = this.socket;
+      if (sock.readyState === WebSocket.CONNECTING) {
+        // Disconnect called before handshake completed.
+        // Detach handlers to prevent ghost events, and close immediately when opened.
+        sock.onmessage = null;
+        sock.onerror = null;
+        sock.onclose = null;
+        sock.onopen = () => {
+          try {
+            sock.close();
+          } catch {
+            // Ignore close error on abort
+          }
+        };
+      } else if (sock.readyState !== WebSocket.CLOSED) {
+        try {
+          sock.close();
+        } catch {
+          // Ignore close error
+        }
+      }
+    }
 
-    clearTimeout(
-      this.reconnectTimer
-    );
-
-    this.reconnectTimer =
-      null;
-  }
-
-  if (
-    this.heartbeatInterval
-  ) {
-
-    clearInterval(
-      this.heartbeatInterval
-    );
-
-    this.heartbeatInterval =
-      null;
-  }
-
-  if (
-    this.socket &&
-    this.socket.readyState !==
-    WebSocket.CLOSED
-  ) {
-
-    this.socket.close();
-  }
-
-  this.socket = null;
-
-  this.isConnected = false;
-
-  this.connectionState =
-    "disconnected";
+    this.socket = null;
+    this.isConnected = false;
+    this.connectionState = "disconnected";
   }
 }
 

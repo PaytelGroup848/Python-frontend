@@ -26,6 +26,7 @@ import {
 
 import { useConversationStore } from "../stores/conversation-store";
 import { useChatStore } from "../stores/chat-store";
+import { socketClient } from "@/services/websocket/socket-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAssistants } from "@/features/playground/hooks/use-assistants";
 import { Assistant } from "@/features/playground/types/assistant";
@@ -151,6 +152,18 @@ export function ConversationSidebar() {
 
   async function handleDeleteChat(conversationId: number) {
     try {
+      if (useChatStore.getState().isStreaming && activeConversationId === conversationId) {
+        try {
+          socketClient.send({
+            type: "stop",
+            conversation_id: conversationId,
+          });
+        } catch (e) {
+          console.warn("Failed to send stop signal on chat delete:", e);
+        }
+        useChatStore.getState().setStreaming(false);
+      }
+
       await deleteConversation(conversationId);
       const updatedConversations = conversations.filter((c) => c.id !== conversationId);
       setConversations(updatedConversations);

@@ -14,6 +14,7 @@ import {
   FileText,
   Globe,
   Image as ImageIcon,
+  Loader2,
   Mic,
   Plus,
   RectangleHorizontal,
@@ -161,7 +162,7 @@ export function MessageInput({
   }
 
   function handleSend() {
-    if (disabled || (!message.trim() && documents.length === 0)) {
+    if (disabled || uploading || (!message.trim() && documents.length === 0)) {
       return;
     }
 
@@ -224,8 +225,14 @@ export function MessageInput({
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col">
       {/* ATTACHED DOCUMENTS & ACTIVE FEATURE BADGES */}
-      {(documents.length > 0 || webSearch || aspectRatio !== "1:1" || think) && (
+      {(documents.length > 0 || uploading || webSearch || aspectRatio !== "1:1" || think) && (
         <div className="flex flex-wrap items-center gap-2 mb-2 px-1">
+          {uploading && (
+            <div className="flex items-center gap-2 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50/90 dark:bg-blue-950/40 px-3 py-1 text-xs text-blue-700 dark:text-blue-300 font-medium animate-pulse shadow-2xs">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+              <span>Uploading attachment...</span>
+            </div>
+          )}
           {documents.map((doc) => (
             <div
               key={doc.filename}
@@ -510,12 +517,27 @@ export function MessageInput({
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
               </button>
+            ) : uploading ? (
+              <button
+                key="btn-uploading-collapsed"
+                type="button"
+                disabled
+                aria-label="Uploading file"
+                title="Uploading file..."
+                className="
+                  flex h-9 w-9 items-center justify-center rounded-full
+                  bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300
+                  cursor-not-allowed
+                "
+              >
+                <Loader2 className="h-4 w-4 animate-spin text-zinc-600 dark:text-zinc-400" />
+              </button>
             ) : hasInput ? (
               <button
                 key="btn-send-msg-collapsed"
                 type="button"
                 onClick={handleSend}
-                disabled={disabled}
+                disabled={disabled || uploading}
                 aria-label="Send message"
                 className="
                   flex h-9 w-9 items-center justify-center rounded-full
@@ -738,12 +760,27 @@ export function MessageInput({
                 >
                   <Square className="h-3.5 w-3.5 fill-current" />
                 </button>
+              ) : uploading ? (
+                <button
+                  key="btn-uploading-expanded"
+                  type="button"
+                  disabled
+                  aria-label="Uploading file"
+                  title="Uploading file..."
+                  className="
+                    flex h-9 w-9 items-center justify-center rounded-full
+                    bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300
+                    cursor-not-allowed
+                  "
+                >
+                  <Loader2 className="h-4 w-4 animate-spin text-zinc-600 dark:text-zinc-400" />
+                </button>
               ) : hasInput ? (
                 <button
                   key="btn-send-msg-expanded"
                   type="button"
                   onClick={handleSend}
-                  disabled={disabled}
+                  disabled={disabled || uploading}
                   aria-label="Send message"
                   className="
                     flex h-9 w-9 items-center justify-center rounded-full

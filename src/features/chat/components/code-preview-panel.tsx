@@ -244,7 +244,7 @@ export function CodePreviewPanel({
               title="Live Preview"
               srcDoc={getHtmlDocument(code, language)}
               className="h-full w-full border-none bg-white"
-              sandbox="allow-scripts allow-modals allow-same-origin allow-forms"
+              sandbox="allow-scripts allow-modals allow-forms"
             />
           </div>
         ) : activeTab === "code" ? (

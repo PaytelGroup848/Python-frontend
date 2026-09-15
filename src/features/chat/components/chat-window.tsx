@@ -124,13 +124,19 @@ export function ChatWindow() {
   }, [activeAssistantId, activeAssistant, isCodeAssistant]);
 
   useEffect(() => {
-    // Authoritative check: cancel generation ONLY if viewing a conversation different from the currently streaming conversation
-    if (
-      isStreaming &&
+    // Authoritative check: cancel active generation if user navigates away from the streaming conversation
+    // 1) Switched from one conversation to another (e.g. idA -> idB)
+    // 2) Switched from active conversation to null / New Chat (e.g. idA -> null)
+    const isColdStart = prevConversationIdRef.current === null && activeConversationId !== null;
+    const hasNavigatedAway =
       streamingConversationIdRef.current !== null &&
-      activeConversationId !== null &&
-      String(streamingConversationIdRef.current) !== String(activeConversationId)
-    ) {
+      !isColdStart &&
+      (
+        (activeConversationId !== null && String(streamingConversationIdRef.current) !== String(activeConversationId)) ||
+        (activeConversationId === null && prevConversationIdRef.current !== null)
+      );
+
+    if (isStreaming && hasNavigatedAway) {
       isManuallyStoppedRef.current = true;
       setStreaming(false);
       const targetToStop = streamingConversationIdRef.current;
@@ -145,6 +151,8 @@ export function ChatWindow() {
         console.warn("Failed to send stop signal on conversation change:", e);
       }
     }
+
+    prevConversationIdRef.current = activeConversationId;
 
     if (!activeConversationId) {
       clearMessages();
@@ -461,6 +469,7 @@ export function ChatWindow() {
 
     if (shouldGenerateTitle && conversationId) {
       const generatedTitle = finalContent.slice(0, 40).trim();
+      useConversationStore.getState().updateTitle(conversationId, generatedTitle);
       updateConversationTitle(conversationId, generatedTitle).catch(console.error);
     }
 

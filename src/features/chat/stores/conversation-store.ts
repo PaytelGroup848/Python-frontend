@@ -33,6 +33,11 @@ interface ConversationState {
   setActiveConversation: (
     id: number | null
   ) => void;
+
+  updateTitle: (
+    id: number,
+    title: string
+  ) => void;
 }
 
 export const
@@ -78,5 +83,15 @@ useConversationStore =
           activeAssistantId: assistantId,
           activeConversationId: null,
         }),
+
+      updateTitle: (
+        id,
+        title
+      ) =>
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, title } : c
+          ),
+        })),
     })
   );
