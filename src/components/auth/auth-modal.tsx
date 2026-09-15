@@ -18,6 +18,39 @@ interface AuthModalProps {
   onSuccess?: () => void;
 }
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              type?: "standard" | "icon";
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+              shape?: "rectangular" | "pill" | "circle" | "square";
+              logo_alignment?: "left" | "center";
+              width?: string | number;
+              locale?: string;
+            }
+          ) => void;
+          prompt?: (notification?: (notification: unknown) => void) => void;
+        };
+      };
+    };
+  }
+}
+
+let isGisInitialized = false;
+
 export function AuthModal({
   isOpen,
   canClose = false,
@@ -38,11 +71,95 @@ export function AuthModal({
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const googleButtonContainerRef = useRef<HTMLDivElement>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
+
+  async function handleGoogleCredential(credential: string) {
+    setGoogleLoading(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      const data = await authService.loginWithGoogle(credential);
+      setAuth(data.user, data.access_token, data.refresh_token);
+      setSuccessMessage("Signed in with Google successfully!");
+      setTimeout(() => {
+        onSuccess?.();
+      }, 300);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || "Google authentication failed");
+      } else {
+        setError("Google authentication failed. Please try again.");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const clientId =
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      "647663692578-u0q685v87qoqjabksdlul3t92g3mlguo.apps.googleusercontent.com";
+
+    function mountGisButton() {
+      if (!window.google?.accounts?.id) return false;
+
+      // Singleton initialize across the entire browser tab lifetime
+      if (!isGisInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            if (response?.credential) {
+              handleGoogleCredential(response.credential);
+            }
+          },
+        });
+        isGisInitialized = true;
+      }
+
+      // Render button cleanly into cleared container ref
+      if (googleButtonContainerRef.current) {
+        googleButtonContainerRef.current.innerHTML = "";
+        window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
+          theme: "filled_black",
+          size: "large",
+          width: 360,
+          text: "continue_with",
+          shape: "pill",
+        });
+      }
+      return true;
+    }
+
+    if (mountGisButton()) return;
+
+    // Load GIS script dynamically if not present
+    let script = document.querySelector<HTMLScriptElement>(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    );
+    if (!script) {
+      script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    const interval = setInterval(() => {
+      if (mountGisButton()) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isOpen, mode]);
 
   useEffect(() => {
     if (queryAuth === "signup") {
@@ -272,6 +389,30 @@ export function AuthModal({
           >
             Create Account
           </button>
+        </div>
+
+        {/* GOOGLE SIGN-IN OFFICIAL GIS BUTTON */}
+        <div className="w-full flex flex-col items-center mb-1">
+          <div
+            ref={googleButtonContainerRef}
+            className="w-full flex justify-center min-h-[44px] overflow-hidden rounded-full"
+          />
+          {googleLoading && (
+            <div className="flex items-center gap-2 text-xs text-emerald-400 mt-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Verifying Google account...</span>
+            </div>
+          )}
+        </div>
+
+        {/* SLEEK DIVIDER */}
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-800" />
+          </div>
+          <span className="relative bg-slate-900/95 px-3 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+            OR
+          </span>
         </div>
 
         {/* Notifications / Alerts */}

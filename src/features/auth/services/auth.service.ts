@@ -37,4 +37,15 @@ export const authService = {
 
     return response.data;
   },
+
+  async loginWithGoogle(
+    credential: string
+  ) {
+    const response = await apiClient.post<AuthResponse>(
+      "/auth/google",
+      { credential }
+    );
+
+    return response.data;
+  },
 };
