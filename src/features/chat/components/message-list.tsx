@@ -28,6 +28,7 @@ interface MessageListProps {
   messages: ChatMessage[];
   onRunPreview?: (code: string, language: string) => void;
   onEditMessage?: (messageId: string | number, newContent: string) => void;
+  onSuggestionClick?: (text: string) => void;
 }
 
 function CodeBlock({
@@ -204,6 +205,7 @@ export function MessageList({
   messages,
   onRunPreview,
   onEditMessage,
+  onSuggestionClick,
 }: MessageListProps) {
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -449,11 +451,22 @@ export function MessageList({
                     {["Add input validation", "Support custom ranges", "Create history log", "Enable shareable results"].map((chip) => (
                       <button
                         key={chip}
+                        type="button"
                         onClick={() => {
-                          const inputEl = document.querySelector('textarea, input[type="text"]') as HTMLTextAreaElement | HTMLInputElement;
-                          if (inputEl) {
-                            inputEl.value = chip;
-                            inputEl.focus();
+                          if (onSuggestionClick) {
+                            onSuggestionClick(chip);
+                          } else {
+                            const inputEl = document.querySelector('textarea, input[type="text"]') as HTMLTextAreaElement | HTMLInputElement;
+                            if (inputEl) {
+                              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+                              if (nativeInputValueSetter) {
+                                nativeInputValueSetter.call(inputEl, chip);
+                              } else {
+                                inputEl.value = chip;
+                              }
+                              inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+                              inputEl.focus();
+                            }
                           }
                         }}
                         className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700 border border-slate-200/80 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 transition-all cursor-pointer"

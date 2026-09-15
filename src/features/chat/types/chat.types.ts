@@ -8,4 +8,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   attachments?: ChatMessageAttachment[];
+  aspectRatio?: string;
+  webSearch?: boolean;
+  think?: boolean;
 }

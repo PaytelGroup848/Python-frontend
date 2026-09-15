@@ -454,6 +454,9 @@ export function ChatWindow() {
       attachments: attachedDocs && attachedDocs.length > 0
         ? attachedDocs.map((d) => ({ filename: d.filename, status: d.status }))
         : undefined,
+      aspectRatio,
+      webSearch,
+      think,
     });
 
     if (shouldGenerateTitle && conversationId) {
@@ -493,11 +496,17 @@ export function ChatWindow() {
     const preservedMessages = messages.slice(0, messageIndex);
     useChatStore.getState().setMessages(preservedMessages);
 
-    handleSend(newContent, targetMessage.attachments);
+    handleSend(
+      newContent,
+      targetMessage.attachments,
+      targetMessage.aspectRatio,
+      targetMessage.webSearch,
+      targetMessage.think
+    );
   };
 
   const displayedMessages = messages;
-  const isEmpty = messages.length === 0 && !activeConversationId;
+  const isEmpty = messages.length === 0;
 
   function getGreeting() {
   const istHour = Number(
@@ -610,6 +619,7 @@ export function ChatWindow() {
                   <MessageList
                     messages={displayedMessages}
                     onEditMessage={handleEditMessage}
+                    onSuggestionClick={(text) => setPrefillState({ text, webSearch: false })}
                     onRunPreview={(code, lang) => {
                       setIsClosedByUser(false);
                       setPreviewData({ code, language: lang });
@@ -662,6 +672,7 @@ export function ChatWindow() {
                 <MessageList
                   messages={displayedMessages}
                   onEditMessage={handleEditMessage}
+                  onSuggestionClick={(text) => setPrefillState({ text, webSearch: false })}
                   onRunPreview={(code, lang) => {
                     setIsClosedByUser(false);
                     setPreviewData({ code, language: lang });

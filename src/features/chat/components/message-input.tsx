@@ -206,6 +206,21 @@ export function MessageInput({
   const hasInput = message.trim().length > 0 || documents.length > 0;
   const isMultiline = message.includes("\n") || message.length > 90;
 
+  // Seamless focus & cursor preservation across single-line <-> multiline transitions
+  const wasMultilineRef = useRef(isMultiline);
+  useEffect(() => {
+    if (wasMultilineRef.current !== isMultiline) {
+      wasMultilineRef.current = isMultiline;
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const len = textareaRef.current.value.length;
+          textareaRef.current.setSelectionRange(len, len);
+        }
+      });
+    }
+  }, [isMultiline]);
+
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col">
       {/* ATTACHED DOCUMENTS & ACTIVE FEATURE BADGES */}
