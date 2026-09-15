@@ -50,6 +50,7 @@ declare global {
 }
 
 let isGisInitialized = false;
+let activeGoogleAuthHandler: ((credential: string) => Promise<void>) | null = null;
 
 export function AuthModal({
   isOpen,
@@ -76,10 +77,14 @@ export function AuthModal({
   const [successMessage, setSuccessMessage] = useState("");
 
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const googleButtonContainerRef = useRef<HTMLDivElement>(null);
+  const isAuthenticatingRef = useRef(false);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   async function handleGoogleCredential(credential: string) {
+    if (isAuthenticatingRef.current) return;
+    isAuthenticatingRef.current = true;
     setGoogleLoading(true);
     setError("");
     setSuccessMessage("");
@@ -98,8 +103,20 @@ export function AuthModal({
       }
     } finally {
       setGoogleLoading(false);
+      isAuthenticatingRef.current = false;
     }
   }
+
+  // Register active auth handler for currently mounted modal instance
+  useEffect(() => {
+    if (!isOpen) return;
+    activeGoogleAuthHandler = handleGoogleCredential;
+    return () => {
+      if (activeGoogleAuthHandler === handleGoogleCredential) {
+        activeGoogleAuthHandler = null;
+      }
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -116,24 +133,28 @@ export function AuthModal({
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (response) => {
-            if (response?.credential) {
-              handleGoogleCredential(response.credential);
+            if (response?.credential && activeGoogleAuthHandler) {
+              activeGoogleAuthHandler(response.credential);
             }
           },
         });
         isGisInitialized = true;
       }
 
-      // Render button cleanly into cleared container ref
+      // Render button cleanly into container ref once per mounted modal DOM
       if (googleButtonContainerRef.current) {
-        googleButtonContainerRef.current.innerHTML = "";
-        window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
-          theme: "filled_black",
-          size: "large",
-          width: 360,
-          text: "continue_with",
-          shape: "pill",
-        });
+        if (googleButtonContainerRef.current.children.length === 0) {
+          const containerWidth = googleButtonContainerRef.current.offsetWidth || 360;
+          const buttonWidth = Math.min(360, Math.max(200, Math.floor(containerWidth)));
+
+          window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
+            theme: "filled_black",
+            size: "large",
+            width: buttonWidth,
+            text: "continue_with",
+            shape: "pill",
+          });
+        }
       }
       return true;
     }
@@ -152,14 +173,16 @@ export function AuthModal({
       document.head.appendChild(script);
     }
 
+    let attempts = 0;
     const interval = setInterval(() => {
-      if (mountGisButton()) {
+      attempts++;
+      if (mountGisButton() || attempts >= 40) {
         clearInterval(interval);
       }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isOpen, mode]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (queryAuth === "signup") {
@@ -173,10 +196,17 @@ export function AuthModal({
     if (isOpen) {
       setError("");
       setSuccessMessage("");
-      // Autofocus email on open/tab change
-      setTimeout(() => {
-        emailInputRef.current?.focus();
-      }, 100);
+      // Smart autofocus on appropriate initial field after animation tick
+      const timer = setTimeout(() => {
+        requestAnimationFrame(() => {
+          if (mode === "signup") {
+            nameInputRef.current?.focus();
+          } else {
+            emailInputRef.current?.focus();
+          }
+        });
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, mode]);
 
@@ -327,10 +357,15 @@ export function AuthModal({
 
       {/* Modal Dialog Card */}
       <motion.div
+        layout
+        transition={{
+          layout: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
+          duration: 0.25,
+          ease: [0.16, 1, 0.3, 1],
+        }}
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
         className="relative w-full max-w-[440px] overflow-hidden rounded-3xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8"
       >
         {/* Optional Close Button */}
@@ -395,7 +430,7 @@ export function AuthModal({
         <div className="w-full flex flex-col items-center mb-1">
           <div
             ref={googleButtonContainerRef}
-            className="w-full flex justify-center min-h-[44px] overflow-hidden rounded-full"
+            className="w-full max-w-[360px] flex justify-center items-center min-h-[40px]"
           />
           {googleLoading && (
             <div className="flex items-center gap-2 text-xs text-emerald-400 mt-2">
@@ -444,166 +479,177 @@ export function AuthModal({
           )}
         </AnimatePresence>
 
-        {/* FORMS */}
-        {mode === "login" ? (
-          /* SIGN IN FORM */
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Email</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  ref={emailInputRef}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300">Password</label>
-              </div>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
-          /* CREATE ACCOUNT FORM */
-          <form onSubmit={handleRegister} className="space-y-3.5">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Full Name</label>
-              <div className="relative">
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your Name"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Email</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  ref={emailInputRef}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              {/* Password strength meter */}
-              {password.length > 0 && (
-                <div className="pt-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Strength:</span>
-                    <span className={`font-semibold ${strength.color}`}>{strength.text}</span>
-                  </div>
-                  <div className="h-1 w-full rounded-full bg-slate-800 mt-1 overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${strength.bg}`}
-                      style={{ width: strength.percent }}
+        {/* FORMS WITH DIRECTIONAL SLIDE & FADE TRANSITION */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={mode}
+            initial={{ opacity: 0, x: mode === "signup" ? 12 : -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: mode === "signup" ? -12 : 12 }}
+            transition={{ duration: 0.18, ease: "easeInOut" }}
+          >
+            {mode === "login" ? (
+              /* SIGN IN FORM */
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Email</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      ref={emailInputRef}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
-              )}
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Creating account...</span>
-                </>
-              ) : (
-                <>
-                  <span>Create Account</span>
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
-        )}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-300">Password</label>
+                  </div>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign In</span>
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* CREATE ACCOUNT FORM */
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Full Name</label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your Name"
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Email</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      ref={emailInputRef}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Password</label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      required
+                      disabled={loading}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+
+                  {/* Password strength meter */}
+                  {password.length > 0 && (
+                    <div className="pt-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Strength:</span>
+                        <span className={`font-semibold ${strength.color}`}>{strength.text}</span>
+                      </div>
+                      <div className="h-1 w-full rounded-full bg-slate-800 mt-1 overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${strength.bg}`}
+                          style={{ width: strength.percent }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Creating account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create Account</span>
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
         {/* Footer info */}
         <div className="mt-5 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
