@@ -75,6 +75,7 @@ export function MessageInput({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [uploading, setUploading] = useState(false);
+  const stopCooldownUntilRef = useRef<number>(0);
 
   const {
     isRecording,
@@ -127,10 +128,21 @@ export function MessageInput({
     }
   }
 
+  function handleStopClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (Date.now() < stopCooldownUntilRef.current) {
+      return; // Defensive debounce: ignore accidental double-click during button swap
+    }
+    onStop?.();
+  }
+
   function handleSend() {
     if (disabled || (!message.trim() && documents.length === 0)) {
       return;
     }
+
+    // Activate 500ms safety window against accidental click collision
+    stopCooldownUntilRef.current = Date.now() + 500;
 
     const textToSend = message.trim();
     const docsToSend = [...documents];
@@ -437,8 +449,9 @@ export function MessageInput({
             {/* VIBRANT BLUE WAVEFORM OR SEND / STOP BUTTON */}
             {isStreaming ? (
               <button
+                key="btn-stop-stream-collapsed"
                 type="button"
-                onClick={onStop}
+                onClick={handleStopClick}
                 aria-label="Stop generating"
                 className="
                   flex h-9 w-9 items-center justify-center rounded-full
@@ -448,8 +461,24 @@ export function MessageInput({
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
               </button>
+            ) : isRecording ? (
+              <button
+                key="btn-stop-rec-collapsed"
+                type="button"
+                onClick={handleAudioWaveformClick}
+                aria-label="Stop recording"
+                title="Stop recording"
+                className="
+                  flex h-9 w-9 items-center justify-center rounded-full
+                  bg-red-600 hover:bg-red-700 text-white
+                  shadow-xs transition-all animate-pulse hover:scale-105 active:scale-95 cursor-pointer
+                "
+              >
+                <Square className="h-3.5 w-3.5 fill-current" />
+              </button>
             ) : hasInput ? (
               <button
+                key="btn-send-msg-collapsed"
                 type="button"
                 onClick={handleSend}
                 disabled={disabled}
@@ -465,6 +494,7 @@ export function MessageInput({
               </button>
             ) : (
               <button
+                key="btn-voice-waveform-collapsed"
                 type="button"
                 onClick={handleAudioWaveformClick}
                 aria-label="Voice conversation"
@@ -647,8 +677,9 @@ export function MessageInput({
               {/* VIBRANT BLUE WAVEFORM OR SEND / STOP BUTTON */}
               {isStreaming ? (
                 <button
+                  key="btn-stop-stream-expanded"
                   type="button"
-                  onClick={onStop}
+                  onClick={handleStopClick}
                   aria-label="Stop generating"
                   className="
                     flex h-9 w-9 items-center justify-center rounded-full
@@ -660,6 +691,7 @@ export function MessageInput({
                 </button>
               ) : isRecording ? (
                 <button
+                  key="btn-stop-rec-expanded"
                   type="button"
                   onClick={handleAudioWaveformClick}
                   aria-label="Stop recording"
@@ -674,6 +706,7 @@ export function MessageInput({
                 </button>
               ) : hasInput ? (
                 <button
+                  key="btn-send-msg-expanded"
                   type="button"
                   onClick={handleSend}
                   disabled={disabled}
@@ -689,6 +722,7 @@ export function MessageInput({
                 </button>
               ) : (
                 <button
+                  key="btn-voice-waveform-expanded"
                   type="button"
                   onClick={handleAudioWaveformClick}
                   aria-label="Voice conversation"

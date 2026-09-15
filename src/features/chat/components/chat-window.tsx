@@ -2,6 +2,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -95,6 +96,8 @@ export function ChatWindow() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const isManuallyStoppedRef = useRef(false);
+  const streamingConversationIdRef = useRef<number | string | null>(null);
+  const activeRequestIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     clearMessages();
@@ -109,13 +112,22 @@ export function ChatWindow() {
   }, [activeAssistantId, activeAssistant, isCodeAssistant]);
 
   useEffect(() => {
-    // When switching conversations, immediately cancel any active stream from the previous chat
-    if (useChatStore.getState().isStreaming) {
+    // Authoritative check: cancel generation ONLY if viewing a conversation different from the currently streaming conversation
+    if (
+      isStreaming &&
+      streamingConversationIdRef.current !== null &&
+      activeConversationId !== null &&
+      String(streamingConversationIdRef.current) !== String(activeConversationId)
+    ) {
       isManuallyStoppedRef.current = true;
       setStreaming(false);
+      const targetToStop = streamingConversationIdRef.current;
+      streamingConversationIdRef.current = null;
+      activeRequestIdRef.current = null;
       try {
         socketClient.send({
           type: "stop",
+          conversation_id: targetToStop,
         });
       } catch (e) {
         console.warn("Failed to send stop signal on conversation change:", e);
@@ -125,9 +137,16 @@ export function ChatWindow() {
     if (!activeConversationId) {
       clearMessages();
     }
-  }, [activeConversationId, clearMessages, setStreaming]);
+  }, [activeConversationId, clearMessages, isStreaming, setStreaming]);
 
-  const handleSocketMessage = (data: { type: string; content?: string; response?: string; conversation_id?: number | string }) => {
+  const handleSocketMessage = useCallback((data: {
+    type: string;
+    request_id?: string;
+    conversation_id?: number | string;
+    content?: string;
+    response?: string;
+    message?: string;
+  }) => {
     // Immediate shield: If user manually stopped the generation, drop all incoming packets!
     if (isManuallyStoppedRef.current) {
       return;
@@ -135,23 +154,49 @@ export function ChatWindow() {
 
     const currentActiveConvId = useConversationStore.getState().activeConversationId;
 
-    // Guard: If chunk belongs to a different conversation, drop it to prevent cross-chat leakage!
+    // 1. Guard: Validate conversation identity if provided
     if (data.conversation_id && currentActiveConvId && String(data.conversation_id) !== String(currentActiveConvId)) {
       return;
     }
 
-    if (data.type === "start") {
-      setStreaming(true);
-      addMessage({
-        id: uuid(),
-        role: "assistant",
-        content: "",
-      });
+    // 2. Lock request_id on queued or start packet
+    if (data.type === "queued" && data.request_id) {
+      activeRequestIdRef.current = data.request_id;
       return;
     }
 
+    if (data.type === "start") {
+      if (data.request_id) {
+        activeRequestIdRef.current = data.request_id;
+      }
+      setStreaming(true);
+      const currentMessages = useChatStore.getState().messages;
+      const lastMsg = currentMessages[currentMessages.length - 1];
+      if (!lastMsg || lastMsg.role !== "assistant") {
+        addMessage({
+          id: uuid(),
+          role: "assistant",
+          content: "",
+        });
+      }
+      return;
+    }
+
+    // 3. Stale packet defense: If request_id exists and doesn't match current active generation, discard
+    if (data.request_id && activeRequestIdRef.current && data.request_id !== activeRequestIdRef.current) {
+      return;
+    }
+
+    // 4. Handle Content Chunks
     if (data.type === "chunk") {
-      if (!useChatStore.getState().isStreaming) return;
+      // Lock request ID if start packet was missed/bypassed
+      if (data.request_id && !activeRequestIdRef.current) {
+        activeRequestIdRef.current = data.request_id;
+      }
+      // Valid chunks belonging to active generation sustain isStreaming
+      if (!useChatStore.getState().isStreaming) {
+        setStreaming(true);
+      }
       const text = data.content || data.response || "";
       if (!text) return;
       const currentMessages = useChatStore.getState().messages;
@@ -169,13 +214,12 @@ export function ChatWindow() {
       return;
     }
 
+    // 5. Handle Complete Message (Fallback)
     if (data.type === "message") {
-      if (!useChatStore.getState().isStreaming) return;
       const text = data.content || data.response || "";
       const currentMessages = useChatStore.getState().messages;
       const lastMsg = currentMessages[currentMessages.length - 1];
 
-      // Prevent appending duplicate content if chunks have already been received
       if (lastMsg && lastMsg.role === "assistant") {
         if (!lastMsg.content && text) {
           updateLastMessage(text);
@@ -189,16 +233,24 @@ export function ChatWindow() {
       }
 
       setStreaming(false);
+      streamingConversationIdRef.current = null;
+      activeRequestIdRef.current = null;
       return;
     }
 
+    // 6. Handle Stopped
     if (data.type === "stopped") {
       setStreaming(false);
+      streamingConversationIdRef.current = null;
+      activeRequestIdRef.current = null;
       return;
     }
 
+    // 7. Handle Error
     if (data.type === "error") {
       setStreaming(false);
+      streamingConversationIdRef.current = null;
+      activeRequestIdRef.current = null;
       const errorMsg = (data as { message?: string }).message || "Generation error occurred.";
       const isPlanLimit =
         errorMsg.toLowerCase().includes("plan limit") ||
@@ -227,8 +279,11 @@ export function ChatWindow() {
       return;
     }
 
+    // 8. Handle Done
     if (data.type === "done") {
       setStreaming(false);
+      streamingConversationIdRef.current = null;
+      activeRequestIdRef.current = null;
       const text = data.content || data.response || "";
       const currentMessages = useChatStore.getState().messages;
       const lastMsg = currentMessages[currentMessages.length - 1];
@@ -237,12 +292,14 @@ export function ChatWindow() {
       }
       return;
     }
-  };
+  }, [addMessage, setStreaming, updateLastMessage]);
 
   const handleStop = () => {
     isManuallyStoppedRef.current = true;
     setStreaming(false);
-    const conversationId = useConversationStore.getState().activeConversationId;
+    const conversationId = streamingConversationIdRef.current || useConversationStore.getState().activeConversationId;
+    streamingConversationIdRef.current = null;
+    activeRequestIdRef.current = null;
     try {
       socketClient.send({
         type: "stop",
@@ -264,8 +321,7 @@ export function ChatWindow() {
     return () => {
       socketClient.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, addMessage, setStreaming, updateLastMessage]);
+  }, [accessToken, handleSocketMessage]);
 
   useEffect(() => {
     if (!isCodeAssistant) {
@@ -343,6 +399,9 @@ export function ChatWindow() {
 
     const shouldGenerateTitle = messages.length === 0;
 
+    // Atomic race-free ordering: Lock streaming conversation ID ref BEFORE triggering streaming state
+    streamingConversationIdRef.current = conversationId;
+    activeRequestIdRef.current = null;
     setStreaming(true);
 
     addMessage({

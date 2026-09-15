@@ -1,7 +1,10 @@
 type SocketPayload = {
   type: string;
+  request_id?: string;
+  conversation_id?: number | string;
   content?: string;
   response?: string;
+  message?: string;
 };
 
 
@@ -46,28 +49,31 @@ class SocketClient {
   private currentHandler:
     MessageHandler | undefined;
 
+  setMessageHandler(handler: MessageHandler) {
+    this.currentHandler = handler;
+  }
+
   connect(
     url: string,
     onMessage?: MessageHandler
   ) {
+    this.currentUrl = url;
+
+    if (onMessage) {
+      this.currentHandler = onMessage;
+    }
 
     if (
       this.socket &&
       (
         this.socket.readyState ===
           WebSocket.OPEN ||
-
         this.socket.readyState ===
           WebSocket.CONNECTING
       )
     ) {
       return;
     }
-
-    this.currentUrl = url;
-
-    this.currentHandler =
-      onMessage;
 
     this.manuallyClosed =
      false;  
@@ -138,8 +144,8 @@ class SocketClient {
         return;
       }
 
-      if (onMessage) {
-        onMessage(data);
+      if (this.currentHandler) {
+        this.currentHandler(data);
       }
 
     } catch (error) {
