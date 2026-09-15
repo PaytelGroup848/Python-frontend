@@ -59,6 +59,7 @@ interface MessageInputProps {
   isStreaming?: boolean;
   disabled?: boolean;
   prefillValue?: string;
+  prefillWebSearch?: boolean;
   onClearPrefill?: () => void;
 }
 
@@ -68,6 +69,7 @@ export function MessageInput({
   isStreaming = false,
   disabled = false,
   prefillValue,
+  prefillWebSearch,
   onClearPrefill,
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
@@ -85,6 +87,9 @@ export function MessageInput({
   useEffect(() => {
     if (prefillValue) {
       setMessage(prefillValue);
+      if (prefillWebSearch) {
+        setWebSearch(true);
+      }
       onClearPrefill?.();
       requestAnimationFrame(() => {
         if (textareaRef.current) {
@@ -94,7 +99,7 @@ export function MessageInput({
         }
       });
     }
-  }, [prefillValue, onClearPrefill]);
+  }, [prefillValue, prefillWebSearch, onClearPrefill]);
 
   const {
     isRecording,
@@ -203,11 +208,6 @@ export function MessageInput({
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col">
-      {/* TOP CENTERED DISCLAIMER: Patwatoli AI */}
-      <p className="text-center text-xs text-zinc-400 font-normal select-none mb-2.5 tracking-tight">
-        Patwatoli AI can make mistakes. Check important info.
-      </p>
-
       {/* ATTACHED DOCUMENTS & ACTIVE FEATURE BADGES */}
       {(documents.length > 0 || webSearch || aspectRatio !== "1:1" || think) && (
         <div className="flex flex-wrap items-center gap-2 mb-2 px-1">

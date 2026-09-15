@@ -98,10 +98,11 @@ export function ChatWindow() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const prevMessagesLengthRef = useRef(messages.length);
+  const prevConversationIdRef = useRef<number | string | null>(activeConversationId);
   const isManuallyStoppedRef = useRef(false);
   const streamingConversationIdRef = useRef<number | string | null>(null);
   const activeRequestIdRef = useRef<string | null>(null);
-  const [prefillValue, setPrefillValue] = useState<string>("");
+  const [prefillState, setPrefillState] = useState<{ text: string; webSearch?: boolean }>({ text: "" });
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -356,14 +357,19 @@ export function ChatWindow() {
 
 
   useEffect(() => {
+    const isConvChange = activeConversationId !== prevConversationIdRef.current;
+    prevConversationIdRef.current = activeConversationId;
+
     const isNewMessage = messages.length > prevMessagesLengthRef.current;
     prevMessagesLengthRef.current = messages.length;
 
-    // If a new message was added (user message sent or new assistant placeholder), always scroll to bottom
-    if (isNewMessage) {
+    // If conversation changed or a new message was added, always scroll to bottom
+    if (isConvChange || isNewMessage) {
       isNearBottomRef.current = true;
-      bottomRef.current?.scrollIntoView({
-        behavior: isStreaming ? "auto" : "smooth",
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({
+          behavior: isStreaming ? "auto" : "smooth",
+        });
       });
       return;
     }
@@ -384,7 +390,16 @@ export function ChatWindow() {
         });
       }
     }
-  }, [messages, isStreaming]);
+  }, [messages, isStreaming, activeConversationId]);
+
+  // Split-screen Live Canvas mount auto-scroll: Keep chat pinned to bottom when preview mounts
+  useEffect(() => {
+    if (previewData) {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "auto" });
+      });
+    }
+  }, [previewData]);
 
   async function handleSend(
     content: string,
@@ -505,21 +520,25 @@ export function ChatWindow() {
       icon: ImageIcon,
       label: "Create an image or sticker",
       prompt: "Create a detailed image of ",
+      webSearch: false,
     },
     {
       icon: PenLine,
       label: "Write or edit",
       prompt: "Help me write ",
+      webSearch: false,
     },
     {
       icon: Globe,
       label: "Search the web",
       prompt: "Search the web for ",
+      webSearch: true,
     },
     {
       icon: Code2,
       label: "Code or debug",
       prompt: "Write a complete web app for ",
+      webSearch: false,
     },
   ];
 
@@ -535,7 +554,7 @@ export function ChatWindow() {
 
       {isEmpty ? (
         // ---------- Landing / hero state (ChatGPT Style) ----------
-        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 sm:px-6 overflow-y-auto">
+        <div className="relative z-10 flex min-h-full w-full flex-col items-center justify-center gap-6 px-4 sm:px-6 py-8 my-auto overflow-y-auto">
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 border border-emerald-200 text-xs font-semibold text-emerald-700 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
             <span>Patwatoli AI Workspace</span>
@@ -551,8 +570,9 @@ export function ChatWindow() {
               onStop={handleStop}
               isStreaming={isStreaming}
               disabled={isStreaming}
-              prefillValue={prefillValue}
-              onClearPrefill={() => setPrefillValue("")}
+              prefillValue={prefillState.text}
+              prefillWebSearch={prefillState.webSearch}
+              onClearPrefill={() => setPrefillState({ text: "" })}
             />
           </div>
 
@@ -564,7 +584,7 @@ export function ChatWindow() {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setPrefillValue(item.prompt)}
+                  onClick={() => setPrefillState({ text: item.prompt, webSearch: item.webSearch })}
                   className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] sm:text-[14px] text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-all cursor-pointer select-none"
                 >
                   <Icon className="h-4 w-4 text-zinc-400 shrink-0" />
@@ -607,8 +627,9 @@ export function ChatWindow() {
                     onStop={handleStop}
                     isStreaming={isStreaming}
                     disabled={isStreaming}
-                    prefillValue={prefillValue}
-                    onClearPrefill={() => setPrefillValue("")}
+                    prefillValue={prefillState.text}
+                    prefillWebSearch={prefillState.webSearch}
+                    onClearPrefill={() => setPrefillState({ text: "" })}
                   />
                   <p className="text-center text-[11px] text-slate-400 mt-2 select-none">
                     Patwatoli AI can make mistakes. Verify important info.
@@ -658,8 +679,9 @@ export function ChatWindow() {
                   onStop={handleStop}
                   isStreaming={isStreaming}
                   disabled={isStreaming}
-                  prefillValue={prefillValue}
-                  onClearPrefill={() => setPrefillValue("")}
+                  prefillValue={prefillState.text}
+                  prefillWebSearch={prefillState.webSearch}
+                  onClearPrefill={() => setPrefillState({ text: "" })}
                 />
                 <p className="text-center text-[11px] text-slate-400 mt-2 select-none">
                   Patwatoli AI can make mistakes. Verify important info.
