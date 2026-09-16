@@ -32,7 +32,7 @@ interface AuthState {
 export const useAuthStore =
   create<AuthState>()(
     persist(
-      (set) => ({
+      (set, get) => ({
 
         user: null,
 
@@ -60,12 +60,29 @@ export const useAuthStore =
             refreshToken,
           }),
 
-        logout: () =>
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-          }),
+        logout: async () => {
+          const refreshToken = get().refreshToken;
+          try {
+            if (refreshToken) {
+              const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+              if (apiUrl) {
+                await fetch(`${apiUrl}/auth/logout`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ refresh_token: refreshToken }),
+                });
+              }
+            }
+          } catch {
+            console.warn("Backend session revocation failed; proceeding with local logout.");
+          } finally {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+            });
+          }
+        },
       }),
 
       {

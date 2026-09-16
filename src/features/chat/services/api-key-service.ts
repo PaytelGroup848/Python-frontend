@@ -1,6 +1,4 @@
-import { useAuthStore } from "@/stores/auth-store";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.patwatoliai.com" ||"http://localhost:8000";
+import { apiClient } from "@/services/api/client";
 
 export interface BackendApiKey {
   id: number | string;
@@ -24,26 +22,14 @@ export interface UsageOverview {
   plan_name: string;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = useAuthStore.getState().accessToken;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-}
-
 export async function fetchApiKeys(): Promise<BackendApiKey[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api-keys`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch API keys");
-    const data = await res.json();
-    return Array.isArray(data) ? data : data.api_keys || data.keys || [];
+    const res = await apiClient.get<BackendApiKey[] | { api_keys?: BackendApiKey[]; keys?: BackendApiKey[] }>("/api-keys");
+    const data = res.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    return data.api_keys || data.keys || [];
   } catch (err) {
     console.error("Backend API keys fetch error:", err);
     return [];
@@ -51,25 +37,14 @@ export async function fetchApiKeys(): Promise<BackendApiKey[]> {
 }
 
 export async function createBackendApiKey(name: string): Promise<BackendApiKey> {
-  const res = await fetch(`${API_BASE_URL}/api-keys`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ name }),
-  });
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.detail || "Failed to create API key");
-  }
-  return await res.json();
+  const res = await apiClient.post<BackendApiKey>("/api-keys", { name });
+  return res.data;
 }
 
 export async function deleteBackendApiKey(keyId: string | number): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api-keys/${keyId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    return res.ok;
+    const res = await apiClient.delete(`/api-keys/${keyId}`);
+    return res.status >= 200 && res.status < 300;
   } catch (err) {
     console.error("Failed to delete API key on backend:", err);
     return false;
@@ -78,11 +53,8 @@ export async function deleteBackendApiKey(keyId: string | number): Promise<boole
 
 export async function disableBackendApiKey(keyId: string | number): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api-keys/${keyId}/disable`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-    });
-    return res.ok;
+    const res = await apiClient.patch(`/api-keys/${keyId}/disable`);
+    return res.status >= 200 && res.status < 300;
   } catch (err) {
     console.error("Failed to disable API key on backend:", err);
     return false;
@@ -91,12 +63,8 @@ export async function disableBackendApiKey(keyId: string | number): Promise<bool
 
 export async function fetchUsageOverview(): Promise<UsageOverview> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api-keys/usage`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch usage overview");
-    const data = await res.json();
+    const res = await apiClient.get<Partial<UsageOverview>>("/api-keys/usage");
+    const data = res.data;
     return {
       total_tokens: Number(data.total_tokens || 0),
       prompt_tokens: Number(data.prompt_tokens || 0),
@@ -121,4 +89,3 @@ export async function fetchUsageOverview(): Promise<UsageOverview> {
     };
   }
 }
-

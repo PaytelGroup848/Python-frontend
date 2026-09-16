@@ -30,9 +30,10 @@ export const authService = {
     return response.data;
   },
 
-  async logout() {
+  async logout(refreshToken?: string | null) {
     const response = await apiClient.post(
-      "/auth/logout"
+      "/auth/logout",
+      { refresh_token: refreshToken || undefined }
     );
 
     return response.data;

@@ -153,7 +153,7 @@ export function ApiKeysModal({ isOpen, onClose }: ApiKeysModalProps) {
 
 client = openai.OpenAI(
     api_key="${generatedKey || keys[0]?.key || "YOUR_API_KEY"}",
-    base_url=""https://api.patwatoliai.com/v1"
+    base_url="https://api.patwatoliai.com/v1"
 )
 
 response = client.chat.completions.create(
