@@ -251,12 +251,13 @@ export function AuthModal({
     try {
       setLoading(true);
       setError("");
-      const response = await authService.login({ email, password });
+      const cleanEmail = email.trim().toLowerCase();
+      const response = await authService.login({ email: cleanEmail, password });
 
       const authUser = response.user || {
         id: 1,
-        email: email,
-        full_name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
+        email: cleanEmail,
+        full_name: cleanEmail.split("@")[0].charAt(0).toUpperCase() + cleanEmail.split("@")[0].slice(1),
         role: "MEMBER",
       };
 
@@ -302,16 +303,18 @@ export function AuthModal({
     try {
       setLoading(true);
       setError("");
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanName = name.trim();
       // Step 1: Register
-      await registerUser(name, email, password);
+      await registerUser(cleanName, cleanEmail, password);
 
       // Step 2: Auto-login
       try {
-        const loginRes = await authService.login({ email, password });
+        const loginRes = await authService.login({ email: cleanEmail, password });
         const authUser = loginRes.user || {
           id: 1,
-          email: email,
-          full_name: name,
+          email: cleanEmail,
+          full_name: cleanName,
           role: "MEMBER",
         };
         setAuth(authUser, loginRes.access_token, loginRes.refresh_token);
@@ -366,7 +369,7 @@ export function AuthModal({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-[440px] overflow-hidden rounded-3xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8"
+        className="relative w-full max-w-[440px] max-h-[92dvh] overflow-y-auto overscroll-contain rounded-3xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8"
       >
         {/* Optional Close Button */}
         {canClose && (
@@ -498,12 +501,16 @@ export function AuthModal({
                     <input
                       ref={emailInputRef}
                       type="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@company.com"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -516,12 +523,15 @@ export function AuthModal({
                     <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
                       type={showPassword ? "text" : "password"}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                     />
                     <button
                       type="button"
@@ -562,12 +572,14 @@ export function AuthModal({
                     <input
                       ref={nameInputRef}
                       type="text"
+                      autoCapitalize="words"
+                      autoCorrect="off"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your Name"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -579,12 +591,16 @@ export function AuthModal({
                     <input
                       ref={emailInputRef}
                       type="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@company.com"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -595,12 +611,15 @@ export function AuthModal({
                     <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
                       type={showPassword ? "text" : "password"}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 8 characters"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                     />
                     <button
                       type="button"

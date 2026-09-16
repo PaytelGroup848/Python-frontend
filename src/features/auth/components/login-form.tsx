@@ -35,15 +35,16 @@ export function LoginForm() {
 
     try {
       setLoading(true);
+      const cleanEmail = email.trim().toLowerCase();
       const response = await authService.login({
-        email,
+        email: cleanEmail,
         password,
       });
 
       const authUser = response.user || {
         id: 1,
-        email: email,
-        full_name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
+        email: cleanEmail,
+        full_name: cleanEmail.split("@")[0].charAt(0).toUpperCase() + cleanEmail.split("@")[0].slice(1),
         role: "ADMIN",
       };
 
@@ -99,6 +100,10 @@ export function LoginForm() {
         <div className="relative">
           <Input
             type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -114,7 +119,7 @@ export function LoginForm() {
                   : "border-zinc-200 hover:border-zinc-300"
               }
               placeholder:text-zinc-400
-              text-zinc-900
+              text-base sm:text-sm text-zinc-900
             `}
           />
           <Mail
@@ -145,6 +150,9 @@ export function LoginForm() {
         <div className="relative">
           <Input
             type={showPassword ? "text" : "password"}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -160,7 +168,7 @@ export function LoginForm() {
                   : "border-zinc-200 hover:border-zinc-300"
               }
               placeholder:text-zinc-400
-              text-zinc-900
+              text-base sm:text-sm text-zinc-900
             `}
           />
           <Lock
