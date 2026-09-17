@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   X,
@@ -38,9 +39,14 @@ export function UpgradePlanModal({
   isOpen,
   onClose,
 }: UpgradePlanModalProps) {
+  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const { openCheckout } = useRazorpay();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [processingPlanCode, setProcessingPlanCode] = useState<string | null>(null);
@@ -52,11 +58,11 @@ export function UpgradePlanModal({
   const { data, isLoading: isPlansLoading } = useQuery({
     queryKey: ["public-plans"],
     queryFn: fetchPublicPlans,
-    enabled: isOpen,
+    enabled: isOpen && mounted,
     staleTime: 5 * 60 * 1000,
   });
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const plans = data?.plans || [];
   const activePlanCode = (data?.active_plan_code || "free").toLowerCase();
@@ -181,8 +187,8 @@ export function UpgradePlanModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] text-slate-900">
         {/* MODAL HEADER */}
         <div className="relative px-6 pt-6 pb-4 border-b border-slate-100 text-center bg-white">
@@ -496,6 +502,7 @@ export function UpgradePlanModal({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
