@@ -102,27 +102,34 @@ export function MessageInput({
     }
   }, [prefillValue, prefillWebSearch, onClearPrefill]);
 
+  // Base text that was in the input before dictation began
+  const voiceBaseMessageRef = useRef<string>("");
+
   const {
     isRecording,
     transcript,
     startRecording,
     stopRecording,
-  } = useVoiceRecorder();
+    resetTranscript,
+  } = useVoiceRecorder({
+    onRecordingStateChange: (recording) => {
+      if (recording) {
+        voiceBaseMessageRef.current = message.trim();
+      }
+    },
+  });
 
-  // Append voice transcript smoothly
+  // Dual-buffer transcript synchronization without phrase duplication
   useEffect(() => {
-    if (!transcript) return;
+    if (!isRecording && !transcript) return;
 
-    const timeout = setTimeout(() => {
-      setMessage((prev) => {
-        if (!prev) return transcript;
-        if (prev.includes(transcript)) return prev;
-        return `${prev} ${transcript}`;
-      });
-    }, 0);
-
-    return () => clearTimeout(timeout);
-  }, [transcript]);
+    const base = voiceBaseMessageRef.current;
+    let full = base;
+    if (transcript) {
+      full = base ? `${base} ${transcript}` : transcript;
+    }
+    setMessage(full);
+  }, [isRecording, transcript]);
 
   // Auto-resize textarea height
   useEffect(() => {
@@ -173,6 +180,12 @@ export function MessageInput({
     const docsToSend = [...documents];
 
     onSend(textToSend, docsToSend, aspectRatio, webSearch, think);
+
+    if (isRecording) {
+      stopRecording();
+    }
+    voiceBaseMessageRef.current = "";
+    resetTranscript();
 
     setMessage("");
     clearDocuments();
