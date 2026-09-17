@@ -32,11 +32,16 @@ export default function AdminLayout({
     }
   }, [user, hydrated, router, pathname]);
 
-  if (hydrated && !hasAdminAccess(user?.role)) {
+  // Guard against hydration flash: never render admin tree until auth state is hydrated
+  if (!hydrated) {
     return null;
   }
 
-  if (hydrated && isRouteRestricted(user?.role, pathname)) {
+  if (!hasAdminAccess(user?.role)) {
+    return null;
+  }
+
+  if (isRouteRestricted(user?.role, pathname)) {
     return null;
   }
 

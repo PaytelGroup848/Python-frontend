@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import {
   useAuthStore,
 } from "@/stores/auth-store";
+import { isSuperAdmin } from "@/features/admin/utils/roles";
 
 export function AdminHeader() {
 
@@ -124,7 +125,7 @@ export function AdminHeader() {
 
               <p className="text-sm font-medium">
 
-                {user?.email?.split("@")[0] ?? "Admin"}
+                {user?.email?.split("@")[0] ?? "User"}
 
               </p>
 
@@ -132,11 +133,11 @@ export function AdminHeader() {
                 className="
                   text-xs
                   text-zinc-500
+                  font-medium
                 "
               >
 
-                {user?.role ??
-                  "admin"}
+                {isSuperAdmin(user?.role) ? "Super Admin" : "Sub Admin"}
 
               </p>
 

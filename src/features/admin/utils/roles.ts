@@ -110,3 +110,4 @@ export function isRouteRestricted(role: string | null | undefined, pathname: str
   // Non-admin roles are restricted from all /admin routes
   return true;
 }
+
