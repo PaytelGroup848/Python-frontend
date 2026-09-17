@@ -18,8 +18,13 @@ import {
 } from "lucide-react";
 import { useAdminMedia, useDeleteAdminMedia } from "@/features/admin/hooks/use-admin-media";
 import type { AdminMediaItem } from "@/features/admin/services/media-service";
+import { useAuthStore } from "@/stores/auth-store";
+import { hasCapability } from "@/features/admin/utils/roles";
 
 export default function AdminMediaPage() {
+  const currentUser = useAuthStore((state) => state.user);
+  const canDeleteMedia = hasCapability(currentUser?.role, "media.delete");
+
   const [page, setPage] = useState(1);
   const [provider, setProvider] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -210,13 +215,15 @@ export default function AdminMediaPage() {
                     >
                       {copiedId === item.id ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                     </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(item.id)}
-                      title="Delete asset"
-                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/80 text-white hover:bg-rose-600 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canDeleteMedia && (
+                      <button
+                        onClick={() => setDeleteConfirmId(item.id)}
+                        title="Delete asset"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/80 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
 
                   {/* TOP BADGE: PROVIDER */}
@@ -338,7 +345,7 @@ export default function AdminMediaPage() {
       )}
 
       {/* DELETE CONFIRMATION MODAL */}
-      {deleteConfirmId !== null && (
+      {deleteConfirmId !== null && canDeleteMedia && (
         <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs animate-in fade-in">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
             <h3 className="text-base font-bold text-slate-900">Delete Media Asset?</h3>

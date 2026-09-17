@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminSidebar } from "@/features/admin/components/admin-sidebar";
 import { AdminHeader } from "@/features/admin/components/admin-header";
+import { hasAdminAccess, isRouteRestricted } from "@/features/admin/utils/roles";
 
 export default function AdminLayout({
   children,
@@ -12,16 +13,30 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const hydrated = useAuthStore((state) => state.hydrated);
 
   useEffect(() => {
-    if (hydrated && user?.role?.toUpperCase() !== "ADMIN") {
-      router.push("/chat");
-    }
-  }, [user, hydrated, router]);
+    if (!hydrated) return;
 
-  if (hydrated && user?.role?.toUpperCase() !== "ADMIN") {
+    // 1. If user is neither Super Admin nor Sub-Admin, redirect to chat
+    if (!hasAdminAccess(user?.role)) {
+      router.push("/chat");
+      return;
+    }
+
+    // 2. If Sub-Admin attempts to access a restricted sub-route, redirect to /admin dashboard
+    if (isRouteRestricted(user?.role, pathname)) {
+      router.push("/admin");
+    }
+  }, [user, hydrated, router, pathname]);
+
+  if (hydrated && !hasAdminAccess(user?.role)) {
+    return null;
+  }
+
+  if (hydrated && isRouteRestricted(user?.role, pathname)) {
     return null;
   }
 

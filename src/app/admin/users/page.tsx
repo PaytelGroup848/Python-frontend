@@ -4,8 +4,14 @@ import { useUsers } from "@/features/admin/hooks/use-users";
 import type { User } from "@/features/admin/services/user-service";
 import { useUpdateUserStatus } from "@/features/admin/hooks/use-update-user-status";
 import { useUpdateUserPlan } from "@/features/admin/hooks/use-update-user-plan";
+import { useAuthStore } from "@/stores/auth-store";
+import { hasCapability } from "@/features/admin/utils/roles";
 
 export default function UsersPage() {
+  const currentUser = useAuthStore((state) => state.user);
+  const canUpdatePlan = hasCapability(currentUser?.role, "users.plan.update");
+  const canUpdateStatus = hasCapability(currentUser?.role, "users.status.update");
+
   const { data, isLoading, error } = useUsers();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus();
   const { mutate: updatePlan, isPending: isUpdatingPlan } = useUpdateUserPlan();
@@ -53,21 +59,27 @@ export default function UsersPage() {
                   </span>
                 </td>
                 <td className="p-4">
-                  <select
-                    className="rounded-lg border px-3 py-2 text-sm"
-                    value={user.plan_name ?? "free"}
-                    disabled={isUpdatingPlan}
-                    onChange={(e) => {
-                      updatePlan({
-                        userId: user.id,
-                        planName: e.target.value,
-                      });
-                    }}
-                  >
-                    <option value="free">FREE TIER</option>
-                    <option value="pro">PRO TIER</option>
-                    <option value="enterprise">ENTERPRISE TIER</option>
-                  </select>
+                  {canUpdatePlan ? (
+                    <select
+                      className="rounded-lg border px-3 py-2 text-sm"
+                      value={user.plan_name ?? "free"}
+                      disabled={isUpdatingPlan}
+                      onChange={(e) => {
+                        updatePlan({
+                          userId: user.id,
+                          planName: e.target.value,
+                        });
+                      }}
+                    >
+                      <option value="free">FREE TIER</option>
+                      <option value="pro">PRO TIER</option>
+                      <option value="enterprise">ENTERPRISE TIER</option>
+                    </select>
+                  ) : (
+                    <span className="inline-block rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-600 uppercase">
+                      {user.plan_name ?? "free"}
+                    </span>
+                  )}
                 </td>
                 <td className="p-4 font-medium">
                   {(user.total_tokens ?? 0).toLocaleString()}
@@ -90,22 +102,28 @@ export default function UsersPage() {
                   </span>
                 </td>
                 <td className="p-4">
-                  <button
-                    disabled={isUpdatingStatus}
-                    onClick={() =>
-                      updateStatus({
-                        userId: user.id,
-                        isActive: !user.is_active,
-                      })
-                    }
-                    className={
-                      user.is_active
-                        ? "rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white"
-                        : "rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white"
-                    }
-                  >
-                    {user.is_active ? "Block" : "Unblock"}
-                  </button>
+                  {canUpdateStatus ? (
+                    <button
+                      disabled={isUpdatingStatus}
+                      onClick={() =>
+                        updateStatus({
+                          userId: user.id,
+                          isActive: !user.is_active,
+                        })
+                      }
+                      className={
+                        user.is_active
+                          ? "rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition cursor-pointer"
+                          : "rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 transition cursor-pointer"
+                      }
+                    >
+                      {user.is_active ? "Block" : "Unblock"}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-zinc-400 italic">
+                      View only
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

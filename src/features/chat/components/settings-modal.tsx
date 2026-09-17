@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, User, Shield, Sliders, ExternalLink, Key, Check } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { hasAdminAccess } from "@/features/admin/utils/roles";
 import Link from "next/link";
 
 interface SettingsModalProps {
@@ -27,7 +28,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const fullName = user?.full_name || (user?.email ? user.email.split("@")[0] : "User");
   const role = user?.role || "MEMBER";
   const avatarInitial = fullName.charAt(0).toUpperCase();
-  const isAdmin = role.toUpperCase() === "ADMIN";
+  const isAdmin = hasAdminAccess(role);
 
   const handleSave = () => {
     setSavedNotice(true);

@@ -37,6 +37,7 @@ import {
 import {
   useAuthStore,
 } from "@/stores/auth-store";
+import { isSuperAdmin, isRouteRestricted } from "@/features/admin/utils/roles";
 
 const navigation = [
   {
@@ -171,6 +172,16 @@ export function AdminSidebar() {
     );
   };
 
+  const isSuper = isSuperAdmin(user?.role);
+
+  // Filter sections and navigation items strictly based on role capabilities
+  const visibleSections = navigation
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !isRouteRestricted(user?.role, item.href)),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
 
     <aside
@@ -186,17 +197,28 @@ export function AdminSidebar() {
 >
 
       <div className="mb-8">
-        <h1 className="text-xl font-bold">
-          AI Platform
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-zinc-900">
+            AI Platform
+          </h1>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ${
+              isSuper
+                ? "bg-purple-100 text-purple-700 border border-purple-200"
+                : "bg-blue-100 text-blue-700 border border-blue-200"
+            }`}
+          >
+            {isSuper ? "Super Admin" : "Sub Admin"}
+          </span>
+        </div>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-500 mt-0.5">
           Admin Dashboard
         </p>
       </div>
 
       <nav className="space-y-6 flex-1">
-        {navigation.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.title}>
             <p className="mb-2 text-xs font-semibold text-zinc-400">
               {section.title}
