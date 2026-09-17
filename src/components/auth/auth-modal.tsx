@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight, X, Shield, CheckCircle2 } from "lucide-react";
 import axios from "axios";
+import { useTheme } from "next-themes";
 
 import { useAuthStore } from "@/stores/auth-store";
 import { authService } from "@/features/auth/services/auth.service";
@@ -59,6 +60,7 @@ export function AuthModal({
   onClose,
   onSuccess,
 }: AuthModalProps) {
+  const { resolvedTheme } = useTheme();
   const searchParams = useSearchParams();
   const queryAuth = searchParams.get("auth");
 
@@ -141,20 +143,20 @@ export function AuthModal({
         isGisInitialized = true;
       }
 
-      // Render button cleanly into container ref once per mounted modal DOM
+      // Render button cleanly into container ref with active theme
       if (googleButtonContainerRef.current) {
-        if (googleButtonContainerRef.current.children.length === 0) {
-          const containerWidth = googleButtonContainerRef.current.offsetWidth || 360;
-          const buttonWidth = Math.min(360, Math.max(200, Math.floor(containerWidth)));
+        googleButtonContainerRef.current.innerHTML = "";
+        const containerWidth = googleButtonContainerRef.current.offsetWidth || 360;
+        const buttonWidth = Math.min(360, Math.max(200, Math.floor(containerWidth)));
+        const gisTheme = resolvedTheme === "dark" ? "filled_black" : "outline";
 
-          window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
-            theme: "filled_black",
-            size: "large",
-            width: buttonWidth,
-            text: "continue_with",
-            shape: "pill",
-          });
-        }
+        window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
+          theme: gisTheme,
+          size: "large",
+          width: buttonWidth,
+          text: "continue_with",
+          shape: "pill",
+        });
       }
       return true;
     }
@@ -182,7 +184,7 @@ export function AuthModal({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, resolvedTheme]);
 
   useEffect(() => {
     if (queryAuth === "signup") {
@@ -347,7 +349,7 @@ export function AuthModal({
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-      {/* Dark frosted glass backdrop */}
+      {/* Frosted glass backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -355,7 +357,7 @@ export function AuthModal({
         onClick={() => {
           if (canClose && onClose) onClose();
         }}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl transition-all"
+        className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200"
       />
 
       {/* Modal Dialog Card */}
@@ -369,13 +371,13 @@ export function AuthModal({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-[440px] max-h-[92dvh] overflow-y-auto overscroll-contain rounded-3xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8"
+        className="relative w-full max-w-[440px] max-h-[92dvh] overflow-y-auto overscroll-contain rounded-3xl border border-slate-200/90 bg-white/95 text-slate-900 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8 dark:border-slate-800/90 dark:bg-slate-900/95 dark:text-slate-100 transition-colors duration-200"
       >
         {/* Optional Close Button */}
         {canClose && (
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 h-8 w-8 rounded-full bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center justify-center"
+            className="absolute top-5 right-5 h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition flex items-center justify-center cursor-pointer"
             aria-label="Close"
           >
             <X size={16} />
@@ -387,10 +389,10 @@ export function AuthModal({
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 mb-3">
             <Sparkles size={24} />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             PATWATOLI AI
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             {mode === "login"
               ? "Sign in to access your AI workspace"
               : "Create an account to start chatting"}
@@ -398,17 +400,17 @@ export function AuthModal({
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-800/60 p-1 mb-6 border border-slate-700/40">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 p-1 mb-6 border border-slate-200/80 dark:border-slate-700/40">
           <button
             type="button"
             onClick={() => {
               setMode("login");
               setError("");
             }}
-            className={`py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all ${
+            className={`py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
               mode === "login"
                 ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                : "text-slate-400 hover:text-slate-200"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
             }`}
           >
             Sign In
@@ -419,10 +421,10 @@ export function AuthModal({
               setMode("signup");
               setError("");
             }}
-            className={`py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all ${
+            className={`py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
               mode === "signup"
                 ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                : "text-slate-400 hover:text-slate-200"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
             }`}
           >
             Create Account
@@ -436,7 +438,7 @@ export function AuthModal({
             className="w-full max-w-[360px] flex justify-center items-center min-h-[40px]"
           />
           {googleLoading && (
-            <div className="flex items-center gap-2 text-xs text-emerald-400 mt-2">
+            <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 mt-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <span>Verifying Google account...</span>
             </div>
@@ -446,9 +448,9 @@ export function AuthModal({
         {/* SLEEK DIVIDER */}
         <div className="relative my-4 flex items-center justify-center">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-800" />
+            <div className="w-full border-t border-slate-200 dark:border-slate-800" />
           </div>
-          <span className="relative bg-slate-900/95 px-3 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+          <span className="relative bg-white/95 dark:bg-slate-900/95 px-3 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">
             OR
           </span>
         </div>
@@ -460,9 +462,9 @@ export function AuthModal({
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2"
+              className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-400 flex items-start gap-2"
             >
-              <div className="h-4 w-4 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold flex-shrink-0 mt-0.5">
+              <div className="h-4 w-4 rounded-full bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center font-bold flex-shrink-0 mt-0.5">
                 !
               </div>
               <span>{error}</span>
@@ -474,9 +476,9 @@ export function AuthModal({
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300 flex items-center gap-2"
+              className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2"
             >
-              <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+              <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               <span>{successMessage}</span>
             </motion.div>
           )}
@@ -495,9 +497,9 @@ export function AuthModal({
               /* SIGN IN FORM */
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Email</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email</label>
                   <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       ref={emailInputRef}
                       type="email"
@@ -510,17 +512,17 @@ export function AuthModal({
                       placeholder="name@company.com"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-4 py-2.5 text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-white dark:placeholder-slate-500 dark:focus:bg-slate-800 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-300">Password</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Password</label>
                   </div>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       type={showPassword ? "text" : "password"}
                       autoCapitalize="none"
@@ -531,12 +533,12 @@ export function AuthModal({
                       placeholder="••••••••"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-10 py-2.5 text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-white dark:placeholder-slate-500 dark:focus:bg-slate-800 transition disabled:opacity-50"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition cursor-pointer"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -547,7 +549,7 @@ export function AuthModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -566,9 +568,9 @@ export function AuthModal({
               /* CREATE ACCOUNT FORM */
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Full Name</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Full Name</label>
                   <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       ref={nameInputRef}
                       type="text"
@@ -579,15 +581,15 @@ export function AuthModal({
                       placeholder="Your Name"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-4 py-2.5 text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-white dark:placeholder-slate-500 dark:focus:bg-slate-800 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Email</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email</label>
                   <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       ref={emailInputRef}
                       type="email"
@@ -600,15 +602,15 @@ export function AuthModal({
                       placeholder="name@company.com"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-4 py-2.5 text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-white dark:placeholder-slate-500 dark:focus:bg-slate-800 transition disabled:opacity-50"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Password</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Password</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       type={showPassword ? "text" : "password"}
                       autoCapitalize="none"
@@ -619,12 +621,12 @@ export function AuthModal({
                       placeholder="At least 8 characters"
                       required
                       disabled={loading}
-                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/70 pl-10 pr-10 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-10 py-2.5 text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-white dark:placeholder-slate-500 dark:focus:bg-slate-800 transition disabled:opacity-50"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition cursor-pointer"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -635,10 +637,10 @@ export function AuthModal({
                   {password.length > 0 && (
                     <div className="pt-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-400">Strength:</span>
+                        <span className="text-slate-500 dark:text-slate-400">Strength:</span>
                         <span className={`font-semibold ${strength.color}`}>{strength.text}</span>
                       </div>
-                      <div className="h-1 w-full rounded-full bg-slate-800 mt-1 overflow-hidden">
+                      <div className="h-1 w-full rounded-full bg-slate-200 dark:bg-slate-800 mt-1 overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 ${strength.bg}`}
                           style={{ width: strength.percent }}
@@ -651,7 +653,7 @@ export function AuthModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50"
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-green-500 transition disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -671,7 +673,7 @@ export function AuthModal({
         </AnimatePresence>
 
         {/* Footer info */}
-        <div className="mt-5 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+        <div className="mt-5 text-center text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
           <Shield size={12} className="text-emerald-500" />
           <span>Enterprise End-to-End Encrypted Session</span>
         </div>
