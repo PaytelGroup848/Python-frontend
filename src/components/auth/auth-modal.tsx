@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight, X, Shield, CheckCircle2 } from "lucide-react";
 import axios from "axios";
 import { useTheme } from "next-themes";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 import { useAuthStore } from "@/stores/auth-store";
 import { authService } from "@/features/auth/services/auth.service";
@@ -373,6 +374,11 @@ export function AuthModal({
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
         className="relative w-full max-w-[440px] max-h-[92dvh] overflow-y-auto overscroll-contain rounded-3xl border border-slate-200/90 bg-white/95 text-slate-900 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl p-6 sm:p-8 dark:border-slate-800/90 dark:bg-slate-900/95 dark:text-slate-100 transition-colors duration-200"
       >
+        {/* Day / Night Theme Toggle */}
+        <div className={`absolute top-5 ${canClose ? "right-15" : "right-5"} z-10`}>
+          <ThemeToggle />
+        </div>
+
         {/* Optional Close Button */}
         {canClose && (
           <button
