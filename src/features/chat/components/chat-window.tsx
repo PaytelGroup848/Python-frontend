@@ -639,7 +639,7 @@ export function ChatWindow() {
               </div>
 
               {/* Fixed Bottom Input Dock */}
-              <div className="shrink-0 w-full px-2 sm:px-4 pb-3 sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
+              <div className="shrink-0 w-full px-2 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
                 <div className="max-w-3xl mx-auto w-full">
                   <MessageInput
                     onSend={handleSend}
@@ -692,7 +692,7 @@ export function ChatWindow() {
             </div>
 
             {/* Fixed Bottom Input Dock */}
-            <div className="shrink-0 w-full px-2 sm:px-6 pb-3 sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
+            <div className="shrink-0 w-full px-2 sm:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
               <div className="max-w-4xl mx-auto w-full">
                 <MessageInput
                   onSend={handleSend}

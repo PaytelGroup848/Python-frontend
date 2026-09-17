@@ -464,7 +464,7 @@ export function MessageInput({
             placeholder="Ask anything"
             className="
               min-w-0 flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0
-              text-[14px] sm:text-[15px] text-zinc-800 placeholder:text-zinc-400
+              text-[16px] sm:text-[15px] text-zinc-800 placeholder:text-zinc-400
               resize-none overflow-hidden py-1 sm:py-1.5 px-1.5 sm:px-2 leading-relaxed max-h-40
             "
           />
@@ -603,7 +603,7 @@ export function MessageInput({
             placeholder="Ask anything"
             className="
               w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0
-              text-[15px] text-zinc-800 placeholder:text-zinc-400
+              text-[16px] sm:text-[15px] text-zinc-800 placeholder:text-zinc-400
               resize-none overflow-hidden px-2 leading-relaxed max-h-48
             "
           />
