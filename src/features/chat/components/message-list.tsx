@@ -25,6 +25,7 @@ import { Bot, Sparkles, Copy, Check, Code2, Play, FileText, Pencil, Share2, Thum
 import { ChatImageCard } from "./chat-image-card";
 import { parseSources, stripCitations } from "../utils/source-parser";
 import { SourcesDropdown } from "./sources-dropdown";
+import { RecommendedSuggestions } from "./recommended-suggestions";
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -218,7 +219,7 @@ function AssistantMessageItem({
   onRunPreview,
   onSuggestionClick,
 }: AssistantMessageItemProps) {
-  const { cleanContent, webSources, documentSources, sourceIndexSet } = useMemo(
+  const { cleanContent, webSources, documentSources, sourceIndexSet, suggestions } = useMemo(
     () => parseSources(message.content),
     [message.content]
   );
@@ -355,6 +356,19 @@ function AssistantMessageItem({
 
       {/* ASSISTANT ACTION BAR: ISOLATED CHATGPT-STYLE FLAT ICONS */}
       {!isStreaming && <AssistantActions content={cleanContent} />}
+
+      {/* RECOMMENDED FOLLOW-UP SUGGESTIONS (PERPLEXITY STYLE) */}
+      {!isStreaming && isLastMessage && suggestions.length > 0 && (
+        <RecommendedSuggestions
+          suggestions={suggestions}
+          onSelect={(prompt) => {
+            if (onSuggestionClick) {
+              onSuggestionClick(prompt);
+            }
+          }}
+          disabled={isStreaming}
+        />
+      )}
     </div>
   );
 }

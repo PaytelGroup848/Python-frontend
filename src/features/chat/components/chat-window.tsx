@@ -628,7 +628,11 @@ export function ChatWindow() {
                   <MessageList
                     messages={displayedMessages}
                     onEditMessage={handleEditMessage}
-                    onSuggestionClick={(text) => setPrefillState({ text, webSearch: false })}
+                    onSuggestionClick={(text) => {
+                      if (!isStreaming) {
+                        handleSend(text);
+                      }
+                    }}
                     onRunPreview={(code, lang) => {
                       setIsClosedByUser(false);
                       setPreviewData({ code, language: lang });
@@ -681,7 +685,11 @@ export function ChatWindow() {
                 <MessageList
                   messages={displayedMessages}
                   onEditMessage={handleEditMessage}
-                  onSuggestionClick={(text) => setPrefillState({ text, webSearch: false })}
+                  onSuggestionClick={(text) => {
+                    if (!isStreaming) {
+                      handleSend(text);
+                    }
+                  }}
                   onRunPreview={(code, lang) => {
                     setIsClosedByUser(false);
                     setPreviewData({ code, language: lang });

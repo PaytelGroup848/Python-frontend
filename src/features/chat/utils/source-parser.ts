@@ -15,6 +15,7 @@ export interface ParsedMessageResult {
   webSources: WebSourceItem[];
   documentSources: DocumentSourceItem[];
   sourceIndexSet: Set<number>;
+  suggestions: string[];
 }
 
 /**
@@ -54,7 +55,60 @@ export function extractCleanDomain(url: string): string {
 }
 
 /**
- * Pure, deterministic function to parse Web Sources and Document Citations
+ * Helper to check if a character index is inside any markdown code fence (```...```)
+ */
+function isInsideCodeFence(content: string, targetIndex: number): boolean {
+  const codeBlocks: { start: number; end: number }[] = [];
+  content.replace(/```[\s\S]*?```/g, (match, offset) => {
+    codeBlocks.push({ start: offset, end: offset + match.length });
+    return match;
+  });
+  return codeBlocks.some((b) => targetIndex >= b.start && targetIndex < b.end);
+}
+
+/**
+ * Extracts and removes a trailing Suggestions block (**💡 Suggestions:**)
+ * strictly from the end of the text, outside of any code fences.
+ */
+function tryExtractTrailingSuggestions(content: string): { remaining: string; suggestions: string[] } {
+  const suggestionRegex = /(?:\r?\n){1,2}\*{0,2}💡\s*Suggestions:?\*{0,2}\s*([\s\S]*)$/i;
+  const match = content.match(suggestionRegex);
+
+  if (!match || match.index === undefined || isInsideCodeFence(content, match.index)) {
+    return { remaining: content, suggestions: [] };
+  }
+
+  const rawBlock = match[1] || "";
+  const rawLines = rawBlock.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (rawLines.length === 0) {
+    return { remaining: content, suggestions: [] };
+  }
+
+  // Filter out standalone empty bullet markers like "-" or "*"
+  const bulletLines = rawLines.filter((l) => !/^[-*•]$/.test(l));
+  if (bulletLines.length === 0 || !bulletLines.every((line) => /^[-*•]\s+|\d+[\.\)]\s+/.test(line))) {
+    return { remaining: content, suggestions: [] };
+  }
+
+  const remaining = content.slice(0, match.index).trimEnd();
+  const seen = new Set<string>();
+  const list: string[] = [];
+
+  for (const line of bulletLines) {
+    const cleanLine = line.replace(/^[-*•]\s*|^\d+[\.\)]\s*/, "").trim();
+    if (!cleanLine || cleanLine.length > 120) continue;
+    const lower = cleanLine.toLowerCase();
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+    list.push(cleanLine);
+  }
+
+  // Strict contract: Cap at max 5 items
+  return { remaining, suggestions: list.slice(0, 5) };
+}
+
+/**
+ * Pure, deterministic function to parse Web Sources, Document Citations, and Follow-up Suggestions
  * strictly from the backend formats without mutating state or transport.
  */
 export function parseSources(content: string): ParsedMessageResult {
@@ -64,18 +118,27 @@ export function parseSources(content: string): ParsedMessageResult {
       webSources: [],
       documentSources: [],
       sourceIndexSet: new Set<number>(),
+      suggestions: [],
     };
   }
 
   let clean = content;
   const webSources: WebSourceItem[] = [];
   const documentSources: DocumentSourceItem[] = [];
+  let suggestions: string[] = [];
 
-  // Match Document Citations block:
+  // 1. Try extract Suggestions from the very end first (if appended after sources)
+  const sugRes1 = tryExtractTrailingSuggestions(clean);
+  if (sugRes1.suggestions.length > 0) {
+    clean = sugRes1.remaining;
+    suggestions = sugRes1.suggestions;
+  }
+
+  // 2. Match Document Citations block:
   // e.g. **📌 Documents:** \n `📄 filename.pdf (Page 2)`  `📄 doc2.pdf`
   const docHeaderRegex = /(?:\r?\n){1,2}\*{0,2}📌\s*Documents:?\*{0,2}\s*([\s\S]*)$/i;
   const docMatch = clean.match(docHeaderRegex);
-  if (docMatch) {
+  if (docMatch && docMatch.index !== undefined && !isInsideCodeFence(clean, docMatch.index)) {
     const docBlock = docMatch[1] || "";
     clean = clean.slice(0, docMatch.index).trimEnd();
 
@@ -91,12 +154,12 @@ export function parseSources(content: string): ParsedMessageResult {
     }
   }
 
-  // Match Web Sources block:
+  // 3. Match Web Sources block:
   // e.g. **🌐 Sources:** \n [1] [Title](https://...) \n [2] [Title 2](https://...)
   // or inline: 🌐 Sources: [1] Title ...
   const webHeaderRegex = /(?:\r?\n){1,2}\*{0,2}🌐\s*Sources:?\*{0,2}\s*([\s\S]*)$/i;
   const webMatch = clean.match(webHeaderRegex);
-  if (webMatch) {
+  if (webMatch && webMatch.index !== undefined && !isInsideCodeFence(clean, webMatch.index)) {
     const webBlock = webMatch[1] || "";
     clean = clean.slice(0, webMatch.index).trimEnd();
 
@@ -155,6 +218,15 @@ export function parseSources(content: string): ParsedMessageResult {
     }
   }
 
+  // 4. If Suggestions was generated BEFORE Sources / Documents, it will now be at the end
+  if (suggestions.length === 0) {
+    const sugRes2 = tryExtractTrailingSuggestions(clean);
+    if (sugRes2.suggestions.length > 0) {
+      clean = sugRes2.remaining;
+      suggestions = sugRes2.suggestions;
+    }
+  }
+
   // Preserve backend numeric order
   webSources.sort((a, b) => a.index - b.index);
 
@@ -165,6 +237,7 @@ export function parseSources(content: string): ParsedMessageResult {
     webSources,
     documentSources,
     sourceIndexSet,
+    suggestions,
   };
 }
 
