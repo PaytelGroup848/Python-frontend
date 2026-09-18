@@ -21,9 +21,9 @@ import {
   useChatStore,
 } from "../stores/chat-store";
 
-import { Bot, Sparkles, Copy, Check, Code2, Play, FileText, Pencil, Share2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Bot, Sparkles, Copy, Check, Code2, Play, FileText, Pencil, Share2, ThumbsUp, ThumbsDown, Globe, ChevronDown } from "lucide-react";
 import { ChatImageCard } from "./chat-image-card";
-import { parseSources, stripCitations } from "../utils/source-parser";
+import { parseSources, stripCitations, type WebSourceItem, type DocumentSourceItem } from "../utils/source-parser";
 import { SourcesDropdown } from "./sources-dropdown";
 import { RecommendedSuggestions } from "./recommended-suggestions";
 
@@ -108,39 +108,59 @@ function CodeBlock({
   );
 }
 
-function AssistantActions({ content }: { content: string }) {
+interface AssistantActionsProps {
+  content: string;
+  webSources?: WebSourceItem[];
+  documentSources?: DocumentSourceItem[];
+  isSourcesOpen?: boolean;
+  onToggleSources?: () => void;
+}
+
+function AssistantActions({
+  content,
+  webSources = [],
+  documentSources = [],
+  isSourcesOpen = false,
+  onToggleSources,
+}: AssistantActionsProps) {
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState(false);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
+  const [shared, setShared] = useState(false);
 
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
         await navigator.share({
           title: "AI Response",
           text: content,
         });
-        return;
-      } catch {
-        // Fallback to clipboard
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } else {
+        await navigator.clipboard.writeText(content);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
       }
+    } catch {
+      // cancelled or unsupported
     }
-    navigator.clipboard.writeText(content);
-    setShared(true);
-    setTimeout(() => setShared(false), 2000);
   };
 
+  const totalSources = webSources.length + documentSources.length;
+
   return (
-    <div className="mt-2 flex items-center gap-1 text-slate-400">
+    <div className="mt-2 flex flex-wrap items-center gap-1 text-slate-400">
       <button
         type="button"
         onClick={handleCopy}
@@ -200,6 +220,36 @@ function AssistantActions({ content }: { content: string }) {
           <Share2 size={14} />
         )}
       </button>
+
+      {/* SOURCES BUTTON NEXT TO SHARE */}
+      {totalSources > 0 && onToggleSources && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSources();
+          }}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ml-1.5 ${
+            isSourcesOpen
+              ? "bg-emerald-50 border-emerald-300 text-emerald-700 shadow-2xs"
+              : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
+          }`}
+          title={isSourcesOpen ? "Hide sources" : "View sources"}
+          aria-expanded={isSourcesOpen}
+        >
+          <Globe size={13} className="text-emerald-600 shrink-0" />
+          <span className="font-semibold text-slate-800">Sources</span>
+          <span className="rounded-full bg-emerald-100/90 border border-emerald-200/80 px-1.5 py-0.2 text-[10px] font-bold text-emerald-800">
+            {totalSources}
+          </span>
+          <ChevronDown
+            size={12}
+            className={`transition-transform duration-200 text-slate-500 ${
+              isSourcesOpen ? "rotate-180 text-emerald-600" : ""
+            }`}
+          />
+        </button>
+      )}
     </div>
   );
 }
@@ -219,6 +269,7 @@ function AssistantMessageItem({
   onRunPreview,
   onSuggestionClick,
 }: AssistantMessageItemProps) {
+  const [isSourcesOpen, setIsSourcesOpen] = useState(false);
   const { cleanContent, webSources, documentSources, sourceIndexSet, suggestions } = useMemo(
     () => parseSources(message.content),
     [message.content]
@@ -346,10 +397,28 @@ function AssistantMessageItem({
         )}
       </div>
 
-      {/* 1. ASSISTANT ACTION BAR: DIRECTLY UNDER RESPONSE TEXT */}
-      {!isStreaming && <AssistantActions content={cleanContent} />}
+      {/* 1. ASSISTANT ACTION BAR: DIRECTLY UNDER RESPONSE TEXT WITH SOURCES NEXT TO SHARE */}
+      {!isStreaming && (
+        <AssistantActions
+          content={cleanContent}
+          webSources={webSources}
+          documentSources={documentSources}
+          isSourcesOpen={isSourcesOpen}
+          onToggleSources={() => setIsSourcesOpen((prev) => !prev)}
+        />
+      )}
 
-      {/* 2. RECOMMENDED FOLLOW-UP SUGGESTIONS (PERPLEXITY STYLE): ABOVE SOURCES */}
+      {/* 2. EXPANDED SOURCES LIST (Shown when user clicks Sources button next to Share) */}
+      {(webSources.length > 0 || documentSources.length > 0) && (
+        <SourcesDropdown
+          sources={webSources}
+          documentSources={documentSources}
+          isOpen={isSourcesOpen}
+          hideHeader={true}
+        />
+      )}
+
+      {/* 3. RECOMMENDED FOLLOW-UP SUGGESTIONS (PERPLEXITY STYLE) */}
       {!isStreaming && isLastMessage && suggestions.length > 0 && (
         <RecommendedSuggestions
           suggestions={suggestions}
@@ -359,14 +428,6 @@ function AssistantMessageItem({
             }
           }}
           disabled={isStreaming}
-        />
-      )}
-
-      {/* 3. INTERACTIVE SOURCES DROPDOWN: BELOW SUGGESTIONS */}
-      {(webSources.length > 0 || documentSources.length > 0) && (
-        <SourcesDropdown
-          sources={webSources}
-          documentSources={documentSources}
         />
       )}
     </div>

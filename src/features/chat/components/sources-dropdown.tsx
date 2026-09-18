@@ -8,6 +8,8 @@ interface SourcesDropdownProps {
   sources: WebSourceItem[];
   documentSources?: DocumentSourceItem[];
   initialOpen?: boolean;
+  isOpen?: boolean;
+  hideHeader?: boolean;
 }
 
 export interface SourcesDropdownHandle {
@@ -41,14 +43,26 @@ function SourceFavicon({ domain }: { domain: string }) {
 }
 
 export const SourcesDropdown = forwardRef<SourcesDropdownHandle, SourcesDropdownProps>(
-  function SourcesDropdown({ sources, documentSources = [], initialOpen = false }, ref) {
-    const [isOpen, setIsOpen] = useState(initialOpen);
+  function SourcesDropdown(
+    {
+      sources,
+      documentSources = [],
+      initialOpen = false,
+      isOpen: controlledIsOpen,
+      hideHeader = false,
+    },
+    ref
+  ) {
+    const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(initialOpen);
+    const isOpen = typeof controlledIsOpen === "boolean" ? controlledIsOpen : uncontrolledIsOpen;
     const [activeSourceIndex, setActiveSourceIndex] = useState<number | null>(null);
     const sourceRefs = useRef<Record<number, HTMLAnchorElement | HTMLDivElement | null>>({});
 
     useImperativeHandle(ref, () => ({
       highlightSource(index: number) {
-        setIsOpen(true);
+        if (typeof controlledIsOpen !== "boolean") {
+          setUncontrolledIsOpen(true);
+        }
         setActiveSourceIndex(index);
         setTimeout(() => {
           const el = sourceRefs.current[index];
@@ -62,10 +76,14 @@ export const SourcesDropdown = forwardRef<SourcesDropdownHandle, SourcesDropdown
         }, 2500);
       },
       open() {
-        setIsOpen(true);
+        if (typeof controlledIsOpen !== "boolean") {
+          setUncontrolledIsOpen(true);
+        }
       },
       close() {
-        setIsOpen(false);
+        if (typeof controlledIsOpen !== "boolean") {
+          setUncontrolledIsOpen(false);
+        }
       },
     }));
 
@@ -73,27 +91,32 @@ export const SourcesDropdown = forwardRef<SourcesDropdownHandle, SourcesDropdown
       return null;
     }
 
+    if (hideHeader && !isOpen) {
+      return null;
+    }
+
     return (
-      <div className="my-3 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs transition-all">
+      <div className="my-2.5 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs transition-all">
         {/* HEADER / TOGGLE BAR */}
-        <button
-          type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-          aria-expanded={isOpen}
-        >
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600">
-              <Globe size={13} />
-            </div>
-            <span className="font-semibold text-slate-800">
-              Sources
-            </span>
-            {sources.length > 0 && (
-              <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                {sources.length}
+        {!hideHeader && (
+          <button
+            type="button"
+            onClick={() => setUncontrolledIsOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            aria-expanded={isOpen}
+          >
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600">
+                <Globe size={13} />
+              </div>
+              <span className="font-semibold text-slate-800">
+                Sources
               </span>
-            )}
+              {sources.length > 0 && (
+                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                  {sources.length}
+                </span>
+              )}
             {documentSources.length > 0 && (
               <span className="rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-bold text-blue-700">
                 {documentSources.length} Doc{documentSources.length > 1 ? "s" : ""}
@@ -128,6 +151,7 @@ export const SourcesDropdown = forwardRef<SourcesDropdownHandle, SourcesDropdown
             />
           </div>
         </button>
+        )}
 
         {/* EXPANDED DROPDOWN CONTENT */}
         {isOpen && (
