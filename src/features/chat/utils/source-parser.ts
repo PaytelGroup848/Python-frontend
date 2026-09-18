@@ -96,11 +96,15 @@ function tryExtractTrailingSuggestions(content: string): { remaining: string; su
 
   for (const line of bulletLines) {
     const cleanLine = line.replace(/^[-*•]\s*|^\d+[\.\)]\s*/, "").trim();
-    if (!cleanLine || cleanLine.length > 120) continue;
-    const lower = cleanLine.toLowerCase();
+    // Strip surrounding markdown formatting (*, _, `) and quotes (", ')
+    const sanitized = cleanLine
+      .replace(/^[\s*"'_`]+|[\s*"'_`]+$/g, "")
+      .trim();
+    if (!sanitized || sanitized.length > 120) continue;
+    const lower = sanitized.toLowerCase();
     if (seen.has(lower)) continue;
     seen.add(lower);
-    list.push(cleanLine);
+    list.push(sanitized);
   }
 
   // Strict contract: Cap at max 5 items

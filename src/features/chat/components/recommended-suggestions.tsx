@@ -25,7 +25,7 @@ export function RecommendedSuggestions({
   };
 
   return (
-    <div className="mt-3 flex flex-col gap-1 w-full max-w-3xl pt-2 border-t border-slate-100/80 dark:border-zinc-800/60">
+    <div className="mt-2.5 flex flex-col gap-0.5 w-full max-w-3xl pt-2 border-t border-slate-100 dark:border-zinc-800/60">
       {suggestions.map((prompt, idx) => {
         const isClicked = clickedPrompt === prompt;
         return (
@@ -37,7 +37,7 @@ export function RecommendedSuggestions({
             className={`group flex items-start gap-2.5 py-1.5 px-2.5 rounded-lg text-left transition-all cursor-pointer ${
               isClicked
                 ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-medium"
-                : "text-slate-700 dark:text-slate-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 active:scale-[0.99]"
+                : "text-slate-800 dark:text-zinc-100 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 active:scale-[0.99]"
             } ${disabled || clickedPrompt ? "opacity-60 cursor-not-allowed" : ""}`}
             title="Click to send follow-up"
           >
@@ -46,10 +46,10 @@ export function RecommendedSuggestions({
               className={`shrink-0 mt-0.5 transition-transform ${
                 isClicked
                   ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 group-hover:translate-x-0.5"
+                  : "text-slate-500 dark:text-zinc-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5"
               }`}
             />
-            <span className="text-[13.5px] sm:text-sm font-normal leading-snug">
+            <span className="text-[13.5px] sm:text-sm font-medium leading-snug">
               {prompt}
             </span>
           </button>

@@ -313,14 +313,6 @@ function AssistantMessageItem({
           </ReactMarkdown>
         </div>
 
-        {/* INTERACTIVE SOURCES DROPDOWN */}
-        {(webSources.length > 0 || documentSources.length > 0) && (
-          <SourcesDropdown
-            sources={webSources}
-            documentSources={documentSources}
-          />
-        )}
-
         {/* SUGGESTION CHIPS */}
         {message.role === "assistant" && message.content.includes("```") && (
           <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-slate-100">
@@ -354,10 +346,10 @@ function AssistantMessageItem({
         )}
       </div>
 
-      {/* ASSISTANT ACTION BAR: ISOLATED CHATGPT-STYLE FLAT ICONS */}
+      {/* 1. ASSISTANT ACTION BAR: DIRECTLY UNDER RESPONSE TEXT */}
       {!isStreaming && <AssistantActions content={cleanContent} />}
 
-      {/* RECOMMENDED FOLLOW-UP SUGGESTIONS (PERPLEXITY STYLE) */}
+      {/* 2. RECOMMENDED FOLLOW-UP SUGGESTIONS (PERPLEXITY STYLE): ABOVE SOURCES */}
       {!isStreaming && isLastMessage && suggestions.length > 0 && (
         <RecommendedSuggestions
           suggestions={suggestions}
@@ -367,6 +359,14 @@ function AssistantMessageItem({
             }
           }}
           disabled={isStreaming}
+        />
+      )}
+
+      {/* 3. INTERACTIVE SOURCES DROPDOWN: BELOW SUGGESTIONS */}
+      {(webSources.length > 0 || documentSources.length > 0) && (
+        <SourcesDropdown
+          sources={webSources}
+          documentSources={documentSources}
         />
       )}
     </div>
