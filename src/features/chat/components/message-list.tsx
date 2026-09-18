@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import ReactMarkdown, { type Components }
   from "react-markdown";
 
@@ -23,6 +23,8 @@ import {
 
 import { Bot, Sparkles, Copy, Check, Code2, Play, FileText, Pencil, Share2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { ChatImageCard } from "./chat-image-card";
+import { parseSources, injectCitationLinks } from "../utils/source-parser";
+import { SourcesDropdown, type SourcesDropdownHandle } from "./sources-dropdown";
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -201,22 +203,32 @@ function AssistantActions({ content }: { content: string }) {
   );
 }
 
-export function MessageList({
-  messages,
-  onRunPreview,
-  onEditMessage,
-  onSuggestionClick,
-}: MessageListProps) {
-  const [editingId, setEditingId] = useState<string | number | null>(null);
-  const [editContent, setEditContent] = useState("");
-  const [copiedId, setCopiedId] = useState<string | number | null>(null);
-  const [sharedId, setSharedId] = useState<string | number | null>(null);
+interface AssistantMessageItemProps {
+  message: ChatMessage;
+  isStreaming: boolean;
+  isLastMessage: boolean;
+  onRunPreview?: (code: string, language: string) => void;
+  onSuggestionClick?: (text: string) => void;
+}
 
-  const isStreaming =
-    useChatStore(
-      (state) =>
-        state.isStreaming
-    );
+function AssistantMessageItem({
+  message,
+  isStreaming,
+  isLastMessage,
+  onRunPreview,
+  onSuggestionClick,
+}: AssistantMessageItemProps) {
+  const dropdownRef = useRef<SourcesDropdownHandle>(null);
+
+  const { cleanContent, webSources, documentSources, sourceIndexSet } = useMemo(
+    () => parseSources(message.content),
+    [message.content]
+  );
+
+  const displayContent = useMemo(
+    () => injectCitationLinks(cleanContent, sourceIndexSet),
+    [cleanContent, sourceIndexSet]
+  );
 
   const markdownComponents: Components = useMemo(
     () => ({
@@ -239,9 +251,147 @@ export function MessageList({
         if (!src) return null;
         return <ChatImageCard src={String(src)} alt={typeof alt === "string" ? alt : "Generated Image"} />;
       },
+      a({ href, children }) {
+        if (href && href.startsWith("#source-")) {
+          const idx = parseInt(href.replace("#source-", ""), 10);
+          return (
+            <button
+              type="button"
+              onClick={() => dropdownRef.current?.highlightSource(idx)}
+              className="inline-flex items-center justify-center -translate-y-1 mx-0.5 px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors dark:bg-emerald-950/80 dark:text-emerald-300 cursor-pointer"
+              title={`View Source [${idx}]`}
+            >
+              {idx}
+            </button>
+          );
+        }
+
+        return (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-600 hover:underline dark:text-emerald-400 font-medium"
+          >
+            {children}
+          </a>
+        );
+      },
     }),
     [onRunPreview]
   );
+
+  return (
+    <div className="flex flex-col items-start w-full max-w-3xl">
+      <div className="w-full text-[15px] leading-7 overflow-x-auto text-slate-800 dark:text-slate-200 bg-transparent py-1">
+        {/* LOVABLE AI RESPONSE EXTENSIONS */}
+        {message.role === "assistant" && message.content.includes("```") && (
+          <div className="mb-3 flex flex-col gap-2.5">
+            {/* THOUGHT DURATION BADGE */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono font-medium">
+              <Sparkles size={12} className="text-emerald-600" />
+              <span>Thought for 2s</span>
+            </div>
+
+            {/* ACTION SUMMARY CARD */}
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-semibold text-slate-800">
+                  Generated Code Component
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const codeMatch = message.content.match(/```(?:\w+)?\n([\s\S]*?)```/);
+                    if (codeMatch && onRunPreview) {
+                      onRunPreview(codeMatch[1], "html");
+                    }
+                  }}
+                  className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-emerald-700 border border-slate-200 shadow-2xs hover:bg-emerald-50 transition-all cursor-pointer"
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CLEAN CONTENT MARKDOWN */}
+        <div className={isStreaming && isLastMessage ? "streaming-cursor" : ""}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {displayContent}
+          </ReactMarkdown>
+        </div>
+
+        {/* INTERACTIVE SOURCES DROPDOWN */}
+        {(webSources.length > 0 || documentSources.length > 0) && (
+          <SourcesDropdown
+            ref={dropdownRef}
+            sources={webSources}
+            documentSources={documentSources}
+          />
+        )}
+
+        {/* SUGGESTION CHIPS */}
+        {message.role === "assistant" && message.content.includes("```") && (
+          <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+            {["Add input validation", "Support custom ranges", "Create history log", "Enable shareable results"].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  if (onSuggestionClick) {
+                    onSuggestionClick(chip);
+                  } else {
+                    const inputEl = document.querySelector('textarea, input[type="text"]') as HTMLTextAreaElement | HTMLInputElement;
+                    if (inputEl) {
+                      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+                      if (nativeInputValueSetter) {
+                        nativeInputValueSetter.call(inputEl, chip);
+                      } else {
+                        inputEl.value = chip;
+                      }
+                      inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+                      inputEl.focus();
+                    }
+                  }
+                }}
+                className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700 border border-slate-200/80 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 transition-all cursor-pointer"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ASSISTANT ACTION BAR: ISOLATED CHATGPT-STYLE FLAT ICONS */}
+      {!isStreaming && <AssistantActions content={cleanContent} />}
+    </div>
+  );
+}
+
+export function MessageList({
+  messages,
+  onRunPreview,
+  onEditMessage,
+  onSuggestionClick,
+}: MessageListProps) {
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [copiedId, setCopiedId] = useState<string | number | null>(null);
+  const [sharedId, setSharedId] = useState<string | number | null>(null);
+
+  const isStreaming =
+    useChatStore(
+      (state) =>
+        state.isStreaming
+    );
 
   const startEditing = (message: ChatMessage) => {
     setEditingId(message.id);
@@ -398,89 +548,13 @@ export function MessageList({
             )
           ) : (
             /* ASSISTANT MESSAGE (CHATGPT-STYLE PLANE / FLAT) */
-            <div className="flex flex-col items-start w-full max-w-3xl">
-              <div className="w-full text-[15px] leading-7 overflow-x-auto text-slate-800 bg-transparent py-1">
-                {/* LOVABLE AI RESPONSE EXTENSIONS */}
-                {message.role === "assistant" && message.content.includes("```") && (
-                  <div className="mb-3 flex flex-col gap-2.5">
-                    {/* THOUGHT DURATION BADGE */}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono font-medium">
-                      <Sparkles size={12} className="text-emerald-600" />
-                      <span>Thought for 2s</span>
-                    </div>
-
-                    {/* ACTION SUMMARY CARD */}
-                    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-2xs">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-xs font-semibold text-slate-800">
-                          Generated Code Component
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const codeMatch = message.content.match(/```(?:\w+)?\n([\s\S]*?)```/);
-                            if (codeMatch && onRunPreview) {
-                              onRunPreview(codeMatch[1], "html");
-                            }
-                          }}
-                          className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-emerald-700 border border-slate-200 shadow-2xs hover:bg-emerald-50 transition-all cursor-pointer"
-                        >
-                          Preview
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className={isStreaming && message.id === messages[messages.length - 1]?.id ? "streaming-cursor" : ""}>
-                  <ReactMarkdown
-                    remarkPlugins={[
-                      remarkGfm
-                    ]}
-                    components={markdownComponents}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-
-                {/* SUGGESTION CHIPS */}
-                {message.role === "assistant" && message.content.includes("```") && (
-                  <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                    {["Add input validation", "Support custom ranges", "Create history log", "Enable shareable results"].map((chip) => (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => {
-                          if (onSuggestionClick) {
-                            onSuggestionClick(chip);
-                          } else {
-                            const inputEl = document.querySelector('textarea, input[type="text"]') as HTMLTextAreaElement | HTMLInputElement;
-                            if (inputEl) {
-                              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
-                              if (nativeInputValueSetter) {
-                                nativeInputValueSetter.call(inputEl, chip);
-                              } else {
-                                inputEl.value = chip;
-                              }
-                              inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-                              inputEl.focus();
-                            }
-                          }
-                        }}
-                        className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700 border border-slate-200/80 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 transition-all cursor-pointer"
-                      >
-                        {chip}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ASSISTANT ACTION BAR: ISOLATED CHATGPT-STYLE FLAT ICONS */}
-              {!isStreaming && <AssistantActions content={message.content} />}
-            </div>
+            <AssistantMessageItem
+              message={message}
+              isStreaming={isStreaming}
+              isLastMessage={message.id === messages[messages.length - 1]?.id}
+              onRunPreview={onRunPreview}
+              onSuggestionClick={onSuggestionClick}
+            />
           )}
         </div>
       ))}
