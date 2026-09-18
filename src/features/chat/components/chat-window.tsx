@@ -28,6 +28,7 @@ import {
 
 import { useAssistants } from "@/features/playground/hooks/use-assistants";
 import { UpgradePlanModal } from "@/features/billing/components/upgrade-plan-modal";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 export function ChatWindow() {
 
@@ -37,8 +38,14 @@ export function ChatWindow() {
   } | null>(null);
   const [isClosedByUser, setIsClosedByUser] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalReason, setAuthModalReason] = useState<"credits_limit" | "session_expired" | "auth_required">("credits_limit");
+  const [guestCreditsRemaining, setGuestCreditsRemaining] = useState<number | null>(null);
 
   const { data: assistants = [] } = useAssistants();
+
+  const user = useAuthStore((state) => state.user);
+  const isGuest = user?.role === "guest";
 
   const messages =
     useChatStore(
@@ -266,12 +273,39 @@ export function ChatWindow() {
       return;
     }
 
+    // 6.1 Handle Credits Update (for Guest users)
+    if (data.type === "credits_update") {
+      const raw = data as unknown as { credits_remaining?: number; remaining?: number };
+      const count = typeof raw.credits_remaining === "number" ? raw.credits_remaining : raw.remaining;
+      if (typeof count === "number") {
+        setGuestCreditsRemaining(count);
+      }
+      return;
+    }
+
     // 7. Handle Error
     if (data.type === "error") {
       setStreaming(false);
       streamingConversationIdRef.current = null;
       activeRequestIdRef.current = null;
+      const errorCode = (data as { code?: string }).code;
       const errorMsg = (data as { message?: string }).message || "Generation error occurred.";
+
+      // Guest Credit Limit Reached -> Open AuthModal with "Your Free Credits Limit is Reached"
+      if (errorCode === "CREDITS_LIMIT_REACHED" || errorMsg.toLowerCase().includes("free credits limit")) {
+        setGuestCreditsRemaining(0);
+        setAuthModalReason("credits_limit");
+        setIsAuthModalOpen(true);
+        return;
+      }
+
+      // Guest Session Expired -> Prompt user to re-initialize or log in
+      if (errorCode === "GUEST_SESSION_EXPIRED" || errorMsg.toLowerCase().includes("session expired")) {
+        setAuthModalReason("session_expired");
+        setIsAuthModalOpen(true);
+        return;
+      }
+
       const isPlanLimit =
         errorMsg.toLowerCase().includes("plan limit") ||
         errorMsg.toLowerCase().includes("plan_limit_exceeded") ||
@@ -422,6 +456,12 @@ export function ChatWindow() {
       !finalContent ||
       isStreaming
     ) {
+      return;
+    }
+
+    if (isGuest && guestCreditsRemaining === 0) {
+      setAuthModalReason("credits_limit");
+      setIsAuthModalOpen(true);
       return;
     }
 
@@ -583,6 +623,23 @@ export function ChatWindow() {
           </h1>
 
           <div className="w-full max-w-2xl px-1 sm:px-0">
+            {isGuest && guestCreditsRemaining === 0 && (
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs text-amber-900 mb-3 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-amber-600 shrink-0" />
+                  <span><strong>Free credits limit reached:</strong> Sign in or create an account to keep chatting.</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setAuthModalReason("credits_limit");
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="shrink-0 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition cursor-pointer"
+                >
+                  Sign In / Register
+                </button>
+              </div>
+            )}
             <MessageInput
               onSend={handleSend}
               onStop={handleStop}
@@ -702,6 +759,23 @@ export function ChatWindow() {
             {/* Fixed Bottom Input Dock */}
             <div className="shrink-0 w-full px-2 sm:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent border-t border-slate-100/60">
               <div className="max-w-4xl mx-auto w-full">
+                {isGuest && guestCreditsRemaining === 0 && (
+                  <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2 text-xs text-amber-900 mb-2 shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={14} className="text-amber-600 shrink-0" />
+                      <span><strong>Free credits limit reached:</strong> Sign in or create an account to keep chatting.</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setAuthModalReason("credits_limit");
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="shrink-0 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition cursor-pointer"
+                    >
+                      Sign In / Register
+                    </button>
+                  </div>
+                )}
                 <MessageInput
                   onSend={handleSend}
                   onStop={handleStop}
@@ -722,6 +796,13 @@ export function ChatWindow() {
       <UpgradePlanModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
+      />
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        canClose={true}
+        reason={authModalReason}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => setIsAuthModalOpen(false)}
       />
     </div>
   );

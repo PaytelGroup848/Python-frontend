@@ -1,11 +1,14 @@
 export interface LoginPayload {
   email: string;
   password: string;
+  guest_token?: string;
 }
 
 export interface SignupPayload {
+  name?: string;
   email: string;
   password: string;
+  guest_token?: string;
 }
 
 export interface AuthUser {

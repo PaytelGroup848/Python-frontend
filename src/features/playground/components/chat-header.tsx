@@ -1,11 +1,18 @@
 "use client";
 
-import { Bot, Sparkles, Menu, Plus } from "lucide-react";
+import { Bot, Sparkles, Menu, Plus, LogIn } from "lucide-react";
 import { useAssistants } from "../hooks/use-assistants";
 import { useConversationStore } from "@/features/chat/stores/conversation-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
+import { useAuthStore } from "@/stores/auth-store";
+import { AuthModal } from "@/components/auth/auth-modal";
+import { useState } from "react";
 
 export function ChatHeader() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const isGuest = user?.role === "guest";
+
   const activeAssistantId = useConversationStore((state) => state.activeAssistantId);
   const conversations = useConversationStore((state) => state.conversations);
   const activeConversationId = useConversationStore((state) => state.activeConversationId);
@@ -98,6 +105,22 @@ export function ChatHeader() {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {isGuest && (
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 border border-amber-200/80 shadow-xs">
+              <Sparkles size={12} className="text-amber-600" />
+              <span>Guest Mode</span>
+            </span>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition cursor-pointer"
+            >
+              <LogIn size={13} />
+              <span>Sign In</span>
+            </button>
+          </div>
+        )}
+
         {/* MOBILE NEW CHAT (+) BUTTON */}
         <button
           onClick={handleNewChat}
@@ -117,6 +140,13 @@ export function ChatHeader() {
           </p>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        canClose={true}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => setIsAuthModalOpen(false)}
+      />
     </header>
   );
-}
+}

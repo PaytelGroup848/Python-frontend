@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Key,
   X,
+  LogIn,
 } from "lucide-react";
 
 import {
@@ -33,6 +34,7 @@ import { Assistant } from "@/features/playground/types/assistant";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserUsage } from "@/features/billing/services/billing.service";
 import { UpgradePlanModal } from "@/features/billing/components/upgrade-plan-modal";
+import { AuthModal } from "@/components/auth/auth-modal";
 import { SettingsModal } from "./settings-modal";
 import { ApiKeysModal } from "./api-keys-modal";
 
@@ -41,6 +43,7 @@ export function ConversationSidebar() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const isGuest = user?.role === "guest";
 
   const conversations = useConversationStore((state) => state.conversations);
   const setConversations = useConversationStore((state) => state.setConversations);
@@ -57,14 +60,16 @@ export function ConversationSidebar() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isApiKeysOpen, setIsApiKeysOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const { data: usage } = useQuery({
     queryKey: ["billing-usage"],
     queryFn: fetchUserUsage,
     staleTime: 60 * 1000,
+    enabled: !isGuest,
   });
 
-  const currentPlanName = usage?.plan?.toUpperCase() || "FREE";
+  const currentPlanName = isGuest ? "GUEST" : (usage?.plan?.toUpperCase() || "FREE");
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -131,7 +136,7 @@ export function ConversationSidebar() {
     }
 
     load();
-  }, [activeAssistantId]);
+  }, [activeAssistantId, user?.id]);
 
   /* =========================
      CREATE CHAT
@@ -491,8 +496,37 @@ export function ConversationSidebar() {
           </>
         )}
 
-        {/* USER PROFILE CARD */}
-        {!isCollapsed ? (
+        {/* USER / GUEST PROFILE CARD */}
+        {isGuest ? (
+          !isCollapsed ? (
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-100 p-3 border border-emerald-200/70 shadow-xs">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white text-[11px] font-bold shadow-xs">
+                  G
+                </div>
+                <span className="text-xs font-bold text-slate-800">Guest Visitor</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mb-2.5 leading-relaxed">
+                Sign in to save your chat history and unlock all features.
+              </p>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+              >
+                <LogIn size={13} />
+                <span>Sign In / Register</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-xs font-bold text-white shadow-xs mx-auto transition hover:opacity-90 cursor-pointer"
+              title="Sign in to save chat"
+            >
+              <LogIn size={16} />
+            </button>
+          )
+        ) : !isCollapsed ? (
           <div className="flex items-center justify-between rounded-xl bg-white p-2.5 border border-slate-200 shadow-xs">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700 font-bold text-xs text-white shadow-xs">
@@ -530,6 +564,7 @@ export function ConversationSidebar() {
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <ApiKeysModal isOpen={isApiKeysOpen} onClose={() => setIsApiKeysOpen(false)} />
       <UpgradePlanModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
+      <AuthModal isOpen={isAuthModalOpen} canClose={true} onClose={() => setIsAuthModalOpen(false)} onSuccess={() => setIsAuthModalOpen(false)} />
     </aside>
   </>
   );

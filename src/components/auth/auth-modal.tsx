@@ -16,6 +16,7 @@ interface AuthModalProps {
   isOpen: boolean;
   canClose?: boolean;
   initialMode?: "login" | "signup";
+  reason?: "credits_limit" | "session_expired" | "auth_required";
   onClose?: () => void;
   onSuccess?: () => void;
 }
@@ -58,6 +59,7 @@ export function AuthModal({
   isOpen,
   canClose = false,
   initialMode = "login",
+  reason = "auth_required",
   onClose,
   onSuccess,
 }: AuthModalProps) {
@@ -92,7 +94,11 @@ export function AuthModal({
     setError("");
     setSuccessMessage("");
     try {
-      const data = await authService.loginWithGoogle(credential);
+      const currentUser = useAuthStore.getState().user;
+      const currentToken = useAuthStore.getState().accessToken;
+      const guestToken = currentUser?.role === "guest" ? currentToken : undefined;
+
+      const data = await authService.loginWithGoogle(credential, guestToken || undefined);
       setAuth(data.user, data.access_token, data.refresh_token);
       setSuccessMessage("Signed in with Google successfully!");
       setTimeout(() => {
@@ -255,7 +261,15 @@ export function AuthModal({
       setLoading(true);
       setError("");
       const cleanEmail = email.trim().toLowerCase();
-      const response = await authService.login({ email: cleanEmail, password });
+      const currentUser = useAuthStore.getState().user;
+      const currentToken = useAuthStore.getState().accessToken;
+      const guestToken = currentUser?.role === "guest" ? currentToken : undefined;
+
+      const response = await authService.login({
+        email: cleanEmail,
+        password,
+        guest_token: guestToken || undefined,
+      });
 
       const authUser = response.user || {
         id: 1,
@@ -308,12 +322,20 @@ export function AuthModal({
       setError("");
       const cleanEmail = email.trim().toLowerCase();
       const cleanName = name.trim();
-      // Step 1: Register
-      await registerUser(cleanName, cleanEmail, password);
+      const currentUser = useAuthStore.getState().user;
+      const currentToken = useAuthStore.getState().accessToken;
+      const guestToken = currentUser?.role === "guest" ? currentToken : undefined;
+
+      // Step 1: Register with guestToken migration
+      await registerUser(cleanName, cleanEmail, password, guestToken || undefined);
 
       // Step 2: Auto-login
       try {
-        const loginRes = await authService.login({ email: cleanEmail, password });
+        const loginRes = await authService.login({
+          email: cleanEmail,
+          password,
+          guest_token: guestToken || undefined,
+        });
         const authUser = loginRes.user || {
           id: 1,
           email: cleanEmail,
@@ -392,17 +414,47 @@ export function AuthModal({
 
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 mb-3">
-            <Sparkles size={24} />
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            PATWATOLI AI
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {mode === "login"
-              ? "Sign in to access your AI workspace"
-              : "Create an account to start chatting"}
-          </p>
+          {reason === "credits_limit" ? (
+            <>
+              <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20 mb-3 shadow-xs">
+                <Sparkles size={13} className="text-amber-500 fill-amber-500" />
+                <span>Free Guest Limit Reached</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                Your Free Credits Limit is Reached
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1.5 max-w-sm">
+                Sign in or create a free account to continue chatting, save your chat history, and unlock all AI features!
+              </p>
+            </>
+          ) : reason === "session_expired" ? (
+            <>
+              <div className="flex items-center gap-1.5 rounded-full bg-slate-500/10 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 border border-slate-500/20 mb-3 shadow-xs">
+                <Sparkles size={13} className="text-slate-500" />
+                <span>Session Expired</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                Guest Session Expired
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1.5 max-w-sm">
+                Your temporary guest session has expired. Sign in or create an account to start a fresh chat.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 mb-3">
+                <Sparkles size={24} />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                PATWATOLI AI
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {mode === "login"
+                  ? "Sign in to access your AI workspace"
+                  : "Create an account to start chatting"}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Tab Switcher */}

@@ -4,7 +4,8 @@ import { apiClient }
 export async function registerUser(
   name: string,
   email: string,
-  password: string
+  password: string,
+  guest_token?: string
 ) {
 
   const response =
@@ -16,6 +17,7 @@ export async function registerUser(
         name,
         email,
         password,
+        guest_token: guest_token || undefined,
       }
     );
 

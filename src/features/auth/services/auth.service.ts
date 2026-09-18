@@ -8,6 +8,15 @@ import {
 
 export const authService = {
 
+  async createGuestSession(initId?: string) {
+    const headers: Record<string, string> = {};
+    if (initId) {
+      headers["X-Guest-Init-Id"] = initId;
+    }
+    const response = await apiClient.post<AuthResponse>("/auth/guest", null, { headers });
+    return response.data;
+  },
+
   async signup(
     payload: SignupPayload
   ) {
@@ -40,11 +49,15 @@ export const authService = {
   },
 
   async loginWithGoogle(
-    credential: string
+    credential: string,
+    guestToken?: string
   ) {
     const response = await apiClient.post<AuthResponse>(
       "/auth/google",
-      { credential }
+      {
+        credential,
+        guest_token: guestToken || undefined,
+      }
     );
 
     return response.data;
