@@ -258,7 +258,7 @@ function AssistantMessageItem({
             <button
               type="button"
               onClick={() => dropdownRef.current?.highlightSource(idx)}
-              className="inline-flex items-center justify-center -translate-y-1 mx-0.5 px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors dark:bg-emerald-950/80 dark:text-emerald-300 cursor-pointer"
+              className="inline-flex items-center justify-center -translate-y-0.5 mx-0.5 px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors border border-emerald-300/60 cursor-pointer"
               title={`View Source [${idx}]`}
             >
               {idx}
@@ -271,7 +271,7 @@ function AssistantMessageItem({
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-emerald-600 hover:underline dark:text-emerald-400 font-medium"
+            className="text-emerald-600 hover:underline font-medium"
           >
             {children}
           </a>
@@ -283,7 +283,7 @@ function AssistantMessageItem({
 
   return (
     <div className="flex flex-col items-start w-full max-w-3xl">
-      <div className="w-full text-[15px] leading-7 overflow-x-auto text-slate-800 dark:text-slate-200 bg-transparent py-1">
+      <div className="w-full text-[15px] leading-7 overflow-x-auto text-slate-800 bg-transparent py-1">
         {/* LOVABLE AI RESPONSE EXTENSIONS */}
         {message.role === "assistant" && message.content.includes("```") && (
           <div className="mb-3 flex flex-col gap-2.5">
