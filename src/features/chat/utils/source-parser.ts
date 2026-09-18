@@ -169,6 +169,45 @@ export function parseSources(content: string): ParsedMessageResult {
 }
 
 /**
+ * Strips citation badges/numbers (e.g. [1], [4]) matching parsed web sources from the text,
+ * ensuring high readability and clean prose without broken punctuation or spaces,
+ * while safely bypassing code fences and inline code blocks.
+ */
+export function stripCitations(content: string, sourceIndexSet: Set<number>): string {
+  if (!content || !sourceIndexSet || sourceIndexSet.size === 0) return content;
+
+  // Split content by code fences (```...```) and inline code spans (`...`)
+  const parts = content.split(/(```[\s\S]*?```|`[^`\r\n]+`)/g);
+  return parts
+    .map((part, index) => {
+      // Odd indices are code fences or inline code spans - do NOT touch
+      if (index % 2 === 1) return part;
+
+      let cleaned = part;
+      // Handle citations preceding punctuation, e.g. "India [1] .", "India [1][2].", "India [1] [2] ."
+      cleaned = cleaned.replace(/((?:\s*\[\d+\](?!\())*)\s*\[(\d+)\](?!\()\s*([.,;?!])/g, (match, before, p1, punct) => {
+        const n = parseInt(p1, 10);
+        if (sourceIndexSet.has(n)) {
+          const cleanBefore = before.replace(/\s*\[(\d+)\]/g, (m: string, b1: string) => {
+            return sourceIndexSet.has(parseInt(b1, 10)) ? "" : m;
+          });
+          return cleanBefore + punct;
+        }
+        return match;
+      });
+
+      // Strip any remaining standalone citations like "(NGO founder) [4]" or "[1] [2]"
+      cleaned = cleaned.replace(/\s*\[(\d+)\](?!\()/g, (match, p1) => {
+        const n = parseInt(p1, 10);
+        return sourceIndexSet.has(n) ? "" : match;
+      });
+
+      return cleaned;
+    })
+    .join("");
+}
+
+/**
  * Injects internal citation anchor links strictly for numbers matching valid parsed web sources,
  * while safely bypassing code fences and inline code blocks.
  */
@@ -189,3 +228,4 @@ export function injectCitationLinks(content: string, sourceIndexSet: Set<number>
     })
     .join("");
 }
+

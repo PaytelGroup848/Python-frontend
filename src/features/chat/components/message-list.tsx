@@ -23,8 +23,8 @@ import {
 
 import { Bot, Sparkles, Copy, Check, Code2, Play, FileText, Pencil, Share2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { ChatImageCard } from "./chat-image-card";
-import { parseSources, injectCitationLinks } from "../utils/source-parser";
-import { SourcesDropdown, type SourcesDropdownHandle } from "./sources-dropdown";
+import { parseSources, stripCitations } from "../utils/source-parser";
+import { SourcesDropdown } from "./sources-dropdown";
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -218,15 +218,13 @@ function AssistantMessageItem({
   onRunPreview,
   onSuggestionClick,
 }: AssistantMessageItemProps) {
-  const dropdownRef = useRef<SourcesDropdownHandle>(null);
-
   const { cleanContent, webSources, documentSources, sourceIndexSet } = useMemo(
     () => parseSources(message.content),
     [message.content]
   );
 
   const displayContent = useMemo(
-    () => injectCitationLinks(cleanContent, sourceIndexSet),
+    () => stripCitations(cleanContent, sourceIndexSet),
     [cleanContent, sourceIndexSet]
   );
 
@@ -252,20 +250,6 @@ function AssistantMessageItem({
         return <ChatImageCard src={String(src)} alt={typeof alt === "string" ? alt : "Generated Image"} />;
       },
       a({ href, children }) {
-        if (href && href.startsWith("#source-")) {
-          const idx = parseInt(href.replace("#source-", ""), 10);
-          return (
-            <button
-              type="button"
-              onClick={() => dropdownRef.current?.highlightSource(idx)}
-              className="inline-flex items-center justify-center -translate-y-0.5 mx-0.5 px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors border border-emerald-300/60 cursor-pointer"
-              title={`View Source [${idx}]`}
-            >
-              {idx}
-            </button>
-          );
-        }
-
         return (
           <a
             href={href}
@@ -331,7 +315,6 @@ function AssistantMessageItem({
         {/* INTERACTIVE SOURCES DROPDOWN */}
         {(webSources.length > 0 || documentSources.length > 0) && (
           <SourcesDropdown
-            ref={dropdownRef}
             sources={webSources}
             documentSources={documentSources}
           />
