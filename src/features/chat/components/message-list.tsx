@@ -364,8 +364,8 @@ function AssistantMessageItem({
           </ReactMarkdown>
         </div>
 
-        {/* SUGGESTION CHIPS */}
-        {message.role === "assistant" && message.content.includes("```") && (
+        {/* SUGGESTION CHIPS (Fallback: only if code present and dynamic suggestions absent) */}
+        {message.role === "assistant" && message.content.includes("```") && suggestions.length === 0 && (
           <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-slate-100">
             {["Add input validation", "Support custom ranges", "Create history log", "Enable shareable results"].map((chip) => (
               <button

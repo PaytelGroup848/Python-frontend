@@ -67,48 +67,94 @@ function isInsideCodeFence(content: string, targetIndex: number): boolean {
 }
 
 /**
- * Extracts and removes a trailing Suggestions block (**💡 Suggestions:**)
- * strictly from the end of the text, outside of any code fences.
+ * Helper to generate comparison key for exact normalized deduplication.
+ * Lowercases, collapses whitespace, and trims trailing punctuation.
+ */
+function normalizeSuggestionKey(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[\s\?\.!,-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Extracts and removes a trailing Suggestions block strictly from the end of the text,
+ * outside of any code fences. Follows the symmetric canonical contract:
+ * - Structural prefixes stripped with delimiter guards
+ * - Surrounding quotes and whitespace collapsed
+ * - Normalized deduplication with original display casing
+ * - MAX_SUGGESTIONS = 4
+ * - Fail-safe: Parser error returns original content intact
  */
 function tryExtractTrailingSuggestions(content: string): { remaining: string; suggestions: string[] } {
-  const suggestionRegex = /(?:\r?\n){1,2}\*{0,2}💡\s*Suggestions:?\*{0,2}\s*([\s\S]*)$/i;
-  const match = content.match(suggestionRegex);
+  if (!content || typeof content !== "string") {
+    return { remaining: content || "", suggestions: [] };
+  }
 
-  if (!match || match.index === undefined || isInsideCodeFence(content, match.index)) {
+  try {
+    const suggestionRegex = /(?:\r?\n){1,2}(?:(?:#{1,4}\s*)?\*{0,2}💡\s*(?:Follow-up\s+)?Suggestions:?\*{0,2}|(?:#{1,4}\s*|\*{1,2})(?:Follow-up\s+)?Suggestions:?\*{0,2}|(?:Follow-up\s+)?Suggestions:)\s*(?:\r?\n)([\s\S]*)$/i;
+    const match = content.match(suggestionRegex);
+
+    if (!match || match.index === undefined || isInsideCodeFence(content, match.index)) {
+      return { remaining: content, suggestions: [] };
+    }
+
+    const rawBlock = match[1] || "";
+    const rawLines = rawBlock.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (rawLines.length === 0) {
+      return { remaining: content.slice(0, match.index).trimEnd(), suggestions: [] };
+    }
+
+    const remaining = content.slice(0, match.index).trimEnd();
+    const seen = new Set<string>();
+    const list: string[] = [];
+
+    // Structural prefix regex with delimiter guard: requires :, ., or - after the keyword
+    const structuralPrefixRegex = /^[-*•]\s*(?:(?:\*{0,2}|_{0,2})(?:suggestion|follow-?up|follow\s+up|q|question|prompt)\s*\d*(?:\*{0,2}|_{0,2})\s*[:.-]\s*)+/i;
+    const repeatedNumericRegex = /^(?:[-*•]\s*)?(?:\d+[\.\)]\s*)+/;
+
+    for (const rawLine of rawLines) {
+      // Filter out standalone empty bullet marks like "-" or "*"
+      if (/^[-*•]$/.test(rawLine)) continue;
+
+      let line = rawLine.trim();
+      if (!line) continue;
+
+      // Step 1: Strip structural model prefixes (delimiter-guarded)
+      line = line.replace(structuralPrefixRegex, "").trim();
+
+      // Step 2: Strip repeated numeric bullets (e.g. "1. 1. Question")
+      line = line.replace(repeatedNumericRegex, "").trim();
+
+      // Step 3: Strip leading bullet symbols if any remain
+      line = line.replace(/^[-*•]\s*/, "").trim();
+
+      // Step 4: Strip surrounding markdown quotes, asterisks, backticks
+      line = line.replace(/^[\s*"'_`]+|[\s*"'_`]+$/g, "").trim();
+
+      // Step 5: Collapse internal whitespace
+      line = line.replace(/\s+/g, " ").trim();
+
+      // Step 6: Validate length and emptiness
+      if (!line || line.length > 120) continue;
+
+      // Step 7: Normalized exact deduplication
+      const key = normalizeSuggestionKey(line);
+      if (!key || seen.has(key)) continue;
+
+      seen.add(key);
+      list.push(line);
+
+      // Step 8: Cap at MAX_SUGGESTIONS = 4
+      if (list.length >= 4) break;
+    }
+
+    return { remaining, suggestions: list };
+  } catch {
+    // Invariant #9: Parser failure must never corrupt or truncate the assistant's primary response
     return { remaining: content, suggestions: [] };
   }
-
-  const rawBlock = match[1] || "";
-  const rawLines = rawBlock.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  if (rawLines.length === 0) {
-    return { remaining: content, suggestions: [] };
-  }
-
-  // Filter out standalone empty bullet markers like "-" or "*"
-  const bulletLines = rawLines.filter((l) => !/^[-*•]$/.test(l));
-  if (bulletLines.length === 0 || !bulletLines.every((line) => /^[-*•]\s+|\d+[\.\)]\s+/.test(line))) {
-    return { remaining: content, suggestions: [] };
-  }
-
-  const remaining = content.slice(0, match.index).trimEnd();
-  const seen = new Set<string>();
-  const list: string[] = [];
-
-  for (const line of bulletLines) {
-    const cleanLine = line.replace(/^[-*•]\s*|^\d+[\.\)]\s*/, "").trim();
-    // Strip surrounding markdown formatting (*, _, `) and quotes (", ')
-    const sanitized = cleanLine
-      .replace(/^[\s*"'_`]+|[\s*"'_`]+$/g, "")
-      .trim();
-    if (!sanitized || sanitized.length > 120) continue;
-    const lower = sanitized.toLowerCase();
-    if (seen.has(lower)) continue;
-    seen.add(lower);
-    list.push(sanitized);
-  }
-
-  // Strict contract: Cap at max 5 items
-  return { remaining, suggestions: list.slice(0, 5) };
 }
 
 /**
