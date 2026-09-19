@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight, X, Shield, CheckCircle2 } from "lucide-react";
@@ -64,7 +65,12 @@ export function AuthModal({
   onSuccess,
 }: AuthModalProps) {
   const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const queryAuth = searchParams.get("auth");
 
   const [mode, setMode] = useState<"login" | "signup">(
@@ -368,9 +374,9 @@ export function AuthModal({
     }
   }
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
       {/* Frosted glass backdrop */}
       <motion.div
@@ -736,7 +742,8 @@ export function AuthModal({
           <span>Enterprise End-to-End Encrypted Session</span>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

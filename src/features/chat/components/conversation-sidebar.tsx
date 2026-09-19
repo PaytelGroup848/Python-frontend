@@ -564,8 +564,9 @@ export function ConversationSidebar() {
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <ApiKeysModal isOpen={isApiKeysOpen} onClose={() => setIsApiKeysOpen(false)} />
       <UpgradePlanModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
-      <AuthModal isOpen={isAuthModalOpen} canClose={true} onClose={() => setIsAuthModalOpen(false)} onSuccess={() => setIsAuthModalOpen(false)} />
     </aside>
+
+    <AuthModal isOpen={isAuthModalOpen} canClose={true} onClose={() => setIsAuthModalOpen(false)} onSuccess={() => setIsAuthModalOpen(false)} />
   </>
   );
 }
