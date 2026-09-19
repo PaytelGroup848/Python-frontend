@@ -12,6 +12,31 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+/**
+ * Checks whether a JWT token is expired or invalid without external libraries.
+ * Adds a 10-second buffer to proactively prevent 401 race conditions.
+ */
+function isJwtExpired(token: string | null | undefined): boolean {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (!payload.exp) return false;
+    return payload.exp * 1000 <= Date.now() + 10000;
+  } catch {
+    return true;
+  }
+}
+
 function AuthGuardContent({ children }: AuthGuardProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const hydrated = useAuthStore((state) => state.hydrated);
@@ -25,10 +50,23 @@ function AuthGuardContent({ children }: AuthGuardProps) {
   useEffect(() => {
     if (!hydrated) return;
 
-    // Already authenticated (registered user or active guest session)
+    // 1. Stale token eviction: If current token is expired, purge it immediately
+    if (accessToken && isJwtExpired(accessToken)) {
+      console.warn("Stale or expired access token detected; purging and auto-provisioning guest session.");
+      useAuthStore.setState({ user: null, accessToken: null, refreshToken: null });
+      try {
+        localStorage.removeItem("ai-platform-auth");
+      } catch {
+        // ignore
+      }
+      isInitiatingRef.current = false;
+      return;
+    }
+
+    // 2. Already authenticated with a valid active session (registered user or guest)
     if (accessToken) return;
 
-    // User explicitly requested login via ?auth=login
+    // 3. User explicitly requested login via ?auth=login
     if (authQuery === "login") return;
 
     if (isInitiatingRef.current) return;
@@ -37,10 +75,11 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     let isMounted = true;
 
     async function provisionGuest() {
-      // 1. Cross-tab single-flight: check if another tab already obtained a guest token
+      // Cross-tab single-flight: check if another tab already obtained a valid guest token
       const existingToken = useAuthStore.getState().accessToken;
-      if (existingToken) {
+      if (existingToken && !isJwtExpired(existingToken)) {
         if (isMounted) setIsInitializingGuest(false);
+        isInitiatingRef.current = false;
         return;
       }
 
@@ -54,16 +93,23 @@ function AuthGuardContent({ children }: AuthGuardProps) {
             const raw = localStorage.getItem("ai-platform-auth");
             if (raw) {
               const parsed = JSON.parse(raw);
-              if (parsed?.state?.accessToken && parsed?.state?.user) {
-                setAuth(parsed.state.user, parsed.state.accessToken, parsed.state.refreshToken || "");
-                return;
+              const storedToken = parsed?.state?.accessToken;
+              const storedUser = parsed?.state?.user;
+              if (storedToken && storedUser) {
+                if (!isJwtExpired(storedToken)) {
+                  setAuth(storedUser, storedToken, parsed?.state?.refreshToken || "");
+                  return;
+                } else {
+                  // Purge stale expired token from storage so it does not resurrect
+                  localStorage.removeItem("ai-platform-auth");
+                }
               }
             }
           } catch {
             // ignore
           }
         }
-        if (currentToken) return;
+        if (currentToken && !isJwtExpired(currentToken)) return;
 
         try {
           let initId = "";
@@ -79,7 +125,18 @@ function AuthGuardContent({ children }: AuthGuardProps) {
             setAuth(guestData.user, guestData.access_token, guestData.refresh_token);
           }
         } catch (err) {
-          console.warn("Guest session auto-provisioning failed:", err);
+          console.warn("Guest session auto-provisioning failed with initId, attempting fresh fallback:", err);
+          try {
+            if (typeof window !== "undefined" && window.sessionStorage) {
+              sessionStorage.removeItem("patwatoli_guest_init_id");
+            }
+            const freshGuestData = await authService.createGuestSession(undefined);
+            if (isMounted && freshGuestData?.access_token) {
+              setAuth(freshGuestData.user, freshGuestData.access_token, freshGuestData.refresh_token);
+            }
+          } catch (fallbackErr) {
+            console.error("Fresh guest session fallback also failed:", fallbackErr);
+          }
         }
       };
 
@@ -93,6 +150,7 @@ function AuthGuardContent({ children }: AuthGuardProps) {
         if (isMounted) {
           setIsInitializingGuest(false);
         }
+        isInitiatingRef.current = false;
       }
     }
 
@@ -108,12 +166,17 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     return <WorkspaceSkeleton />;
   }
 
-  // 2. Authenticated (Registered user or Guest user): Render real workspace directly
-  if (accessToken) {
+  // 2. Authenticated (Registered user or Guest user with valid token): Render real workspace directly
+  if (accessToken && !isJwtExpired(accessToken)) {
     return <>{children}</>;
   }
 
-  // 3. Unauthenticated (Explicit ?auth=login or fallback): Render centered AuthModal
+  // 3. Fallback when user did NOT explicitly request ?auth=login: Keep showing skeleton while provisioning
+  if (authQuery !== "login") {
+    return <WorkspaceSkeleton />;
+  }
+
+  // 4. Explicit ?auth=login: Render centered AuthModal
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors duration-200">
       {/* Ambient emerald glow waves matching product */}
