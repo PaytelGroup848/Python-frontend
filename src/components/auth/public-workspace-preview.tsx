@@ -4,7 +4,7 @@ import { Sparkles, Bot, Code, FileText, Image as ImageIcon, Plus, Lock, Send, Za
 
 export function PublicWorkspacePreview() {
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 select-none pointer-events-none filter blur-[1.5px] opacity-75">
+    <div className="relative flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 select-none pointer-events-none filter blur-[0.8px] opacity-85 transition-opacity duration-300">
       {/* MOCK SIDEBAR */}
       <div className="hidden md:flex w-72 flex-col border-r border-slate-200/90 bg-white/80 dark:border-slate-800/90 dark:bg-slate-900/80 p-4 justify-between">
         <div className="space-y-4">
