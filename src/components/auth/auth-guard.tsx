@@ -28,8 +28,8 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     // Already authenticated (registered user or active guest session)
     if (accessToken) return;
 
-    // User explicitly requested login or registration via ?auth=... URL param
-    if (authQuery === "login" || authQuery === "signup") return;
+    // User explicitly requested login via ?auth=login
+    if (authQuery === "login") return;
 
     if (isInitiatingRef.current) return;
     isInitiatingRef.current = true;

@@ -81,7 +81,7 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/chat?auth=signup"
+                href="/chat"
                 className="group inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-linear-to-r from-emerald-600 to-green-700 text-white rounded-2xl font-semibold hover:opacity-90 transition-opacity shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40"
               >
                 Get Started Free
