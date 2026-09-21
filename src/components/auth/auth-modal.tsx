@@ -158,18 +158,26 @@ export function AuthModal({
 
       // Render button cleanly into container ref with active theme
       if (googleButtonContainerRef.current) {
-        googleButtonContainerRef.current.innerHTML = "";
         const containerWidth = googleButtonContainerRef.current.offsetWidth || 360;
         const buttonWidth = Math.min(360, Math.max(200, Math.floor(containerWidth)));
         const gisTheme = resolvedTheme === "dark" ? "filled_black" : "outline";
 
-        window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
+        const tempContainer = document.createElement("div");
+        tempContainer.style.width = "100%";
+        tempContainer.style.display = "flex";
+        tempContainer.style.justifyContent = "center";
+        tempContainer.style.alignItems = "center";
+        tempContainer.style.height = "44px";
+
+        window.google.accounts.id.renderButton(tempContainer, {
           theme: gisTheme,
           size: "large",
           width: buttonWidth,
           text: "continue_with",
           shape: "pill",
         });
+
+        googleButtonContainerRef.current.replaceChildren(tempContainer);
       }
       return true;
     }
@@ -497,10 +505,12 @@ export function AuthModal({
 
         {/* GOOGLE SIGN-IN OFFICIAL GIS BUTTON */}
         <div className="w-full flex flex-col items-center mb-1">
-          <div
-            ref={googleButtonContainerRef}
-            className="w-full max-w-[360px] flex justify-center items-center min-h-[40px]"
-          />
+          <div className="w-full max-w-[360px] h-[44px] min-h-[44px] flex justify-center items-center shrink-0 overflow-hidden">
+            <div
+              ref={googleButtonContainerRef}
+              className="w-full h-[44px] min-h-[44px] flex justify-center items-center shrink-0"
+            />
+          </div>
           {googleLoading && (
             <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 mt-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
