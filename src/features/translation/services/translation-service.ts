@@ -73,3 +73,4 @@ export async function downloadTranslatedFile(
   document.body.removeChild(link);
   window.URL.revokeObjectURL(downloadUrl);
 }
+

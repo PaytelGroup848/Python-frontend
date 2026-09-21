@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Languages, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import { SupportedLanguage, DocumentJobStatus } from "../types/translation";
 import {
@@ -31,6 +32,11 @@ export function TranslationStudioModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentJob, setCurrentJob] = useState<DocumentJobStatus | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -112,13 +118,13 @@ export function TranslationStudioModal({
     setErrorMessage(null);
   }
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const isProcessing = Boolean(isSubmitting || (currentJob && !["completed", "failed"].includes(currentJob.status)));
   const isFinished = Boolean(currentJob && currentJob.status === "completed");
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in-50">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in-50">
       <div className="relative w-full max-w-4xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
         
         {/* Header */}
@@ -230,6 +236,7 @@ export function TranslationStudioModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

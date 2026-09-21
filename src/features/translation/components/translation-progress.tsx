@@ -89,3 +89,4 @@ export function TranslationProgress({ status }: TranslationProgressProps) {
     </div>
   );
 }
+
