@@ -21,6 +21,7 @@ import {
   RectangleVertical,
   Square,
   X,
+  Languages,
 } from "lucide-react";
 
 import {
@@ -34,6 +35,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+
+import { TranslationStudioModal } from "@/features/translation/components/translation-studio-modal";
 
 import {
   uploadDocument,
@@ -77,6 +80,7 @@ export function MessageInput({
   const [aspectRatio, setAspectRatio] = useState<"1:1" | "16:9" | "9:16">("1:1");
   const [webSearch, setWebSearch] = useState(false);
   const [think, setThink] = useState(false);
+  const [isTranslationOpen, setIsTranslationOpen] = useState(false);
 
   const documentInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -384,6 +388,14 @@ export function MessageInput({
               </DropdownMenuItem>
 
               <DropdownMenuItem
+                onClick={() => setIsTranslationOpen(true)}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl cursor-pointer"
+              >
+                <Languages className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Translate document</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
                 onClick={() => photoInputRef.current?.click()}
                 className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl cursor-pointer"
               >
@@ -642,6 +654,14 @@ export function MessageInput({
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
+                  onClick={() => setIsTranslationOpen(true)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl cursor-pointer"
+                >
+                  <Languages className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Translate document</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
                   onClick={() => photoInputRef.current?.click()}
                   className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl cursor-pointer"
                 >
@@ -824,6 +844,11 @@ export function MessageInput({
           </div>
         </div>
       )}
+
+      <TranslationStudioModal
+        isOpen={isTranslationOpen}
+        onClose={() => setIsTranslationOpen(false)}
+      />
     </div>
   );
 }

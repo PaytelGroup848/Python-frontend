@@ -16,6 +16,7 @@ import {
   Key,
   X,
   LogIn,
+  Languages,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,7 @@ import { UpgradePlanModal } from "@/features/billing/components/upgrade-plan-mod
 import { AuthModal } from "@/components/auth/auth-modal";
 import { SettingsModal } from "./settings-modal";
 import { ApiKeysModal } from "./api-keys-modal";
+import { TranslationStudioModal } from "@/features/translation/components/translation-studio-modal";
 
 
 export function ConversationSidebar() {
@@ -61,6 +63,7 @@ export function ConversationSidebar() {
   const [isApiKeysOpen, setIsApiKeysOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isTranslationOpen, setIsTranslationOpen] = useState(false);
 
   const { data: usage } = useQuery({
     queryKey: ["billing-usage"],
@@ -320,24 +323,42 @@ export function ConversationSidebar() {
 
         </div>
 
-      {/* NEW CHAT ACTION */}
-      <div className="p-3.5">
+      {/* ACTIONS: NEW CHAT & TRANSLATE DOCUMENT */}
+      <div className="p-3.5 space-y-2">
         {!isCollapsed ? (
-          <button
-            onClick={handleNewChat}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:shadow-lg hover:shadow-emerald-600/25 active:scale-[0.98] shadow-md shadow-emerald-600/20"
-          >
-            <Plus size={16} />
-            New Conversation
-          </button>
+          <>
+            <button
+              onClick={handleNewChat}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:shadow-lg hover:shadow-emerald-600/25 active:scale-[0.98] shadow-md shadow-emerald-600/20 cursor-pointer"
+            >
+              <Plus size={16} />
+              New Conversation
+            </button>
+            <button
+              onClick={() => setIsTranslationOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200/90 px-4 py-2 text-xs font-semibold text-slate-700 transition-all duration-200 active:scale-[0.98] cursor-pointer"
+            >
+              <Languages size={15} className="text-emerald-600" />
+              <span>Translate Document</span>
+            </button>
+          </>
         ) : (
-          <button
-            onClick={handleNewChat}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 mx-auto transition hover:scale-105"
-            title="New Conversation"
-          >
-            <Plus size={18} />
-          </button>
+          <>
+            <button
+              onClick={handleNewChat}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 mx-auto transition hover:scale-105 cursor-pointer"
+              title="New Conversation"
+            >
+              <Plus size={18} />
+            </button>
+            <button
+              onClick={() => setIsTranslationOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200/90 mx-auto transition hover:scale-105 cursor-pointer"
+              title="Translate Document"
+            >
+              <Languages size={17} className="text-emerald-600" />
+            </button>
+          </>
         )}
       </div>
 
@@ -564,6 +585,7 @@ export function ConversationSidebar() {
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <ApiKeysModal isOpen={isApiKeysOpen} onClose={() => setIsApiKeysOpen(false)} />
       <UpgradePlanModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
+      <TranslationStudioModal isOpen={isTranslationOpen} onClose={() => setIsTranslationOpen(false)} />
     </aside>
 
     <AuthModal isOpen={isAuthModalOpen} canClose={true} onClose={() => setIsAuthModalOpen(false)} onSuccess={() => setIsAuthModalOpen(false)} />
