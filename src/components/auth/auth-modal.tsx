@@ -386,7 +386,7 @@ export function AuthModal({
         onClick={() => {
           if (canClose && onClose) onClose();
         }}
-        className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200"
+        className="absolute inset-0 bg-slate-200/60 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200"
       />
 
       {/* Modal Dialog Card */}
