@@ -5,38 +5,22 @@ import {
   Conversation,
 } from "../types/conversation.types";
 
-export async function
-createConversation(
-  assistantId:
-    number | null
+export async function createConversation(
+  assistantId: number | null,
+  title: string = "New Chat"
 ) {
-
-  const response =
-    await apiClient.post(
-
-      "/conversations",
-
-      {
-
-        title:
-          "New Chat",
-
-        assistant_id:
-          assistantId,
-
-      }
-
-    );
-
-  return (
-
-    response.data.data
-    ||
-
-    response.data
-
+  const response = await apiClient.post(
+    "/conversations",
+    {
+      title,
+      assistant_id: assistantId,
+    }
   );
 
+  return (
+    response.data.data ||
+    response.data
+  );
 }
 
 export async function

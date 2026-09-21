@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 
 import {
-  createConversation,
   getConversations,
   getConversationMessages,
   deleteConversation,
@@ -142,20 +141,34 @@ export function ConversationSidebar() {
   }, [activeAssistantId, user?.id]);
 
   /* =========================
-     CREATE CHAT
+     CREATE CHAT (LAZY DRAFT)
   ========================= */
 
-  async function handleNewChat() {
+  function handleNewChat() {
     setMobileSidebarOpen(false);
-    try {
-      const conversation = await createConversation(activeAssistantId);
-      const updatedConversations = await getConversations(activeAssistantId);
-      setConversations(updatedConversations);
-      setActiveConversation(conversation.id);
-      setMessages([]);
-    } catch (error) {
-      console.error(error);
+
+    // Guard: If already in an empty draft chat (activeConversationId is null and no messages), do nothing
+    const currentMessages = useChatStore.getState().messages;
+    if (activeConversationId === null && currentMessages.length === 0) {
+      return;
     }
+
+    // If streaming, send stop signal
+    if (useChatStore.getState().isStreaming && activeConversationId) {
+      try {
+        socketClient.send({
+          type: "stop",
+          conversation_id: activeConversationId,
+        });
+      } catch (e) {
+        console.warn("Failed to send stop signal on new chat:", e);
+      }
+      useChatStore.getState().setStreaming(false);
+    }
+
+    // Set active conversation to null and clear messages for a clean new chat draft
+    setActiveConversation(null);
+    setMessages([]);
   }
 
   async function handleDeleteChat(conversationId: number) {

@@ -469,15 +469,21 @@ export function ChatWindow() {
 
     let conversationId = useConversationStore.getState().activeConversationId;
 
-    // Auto create conversation if not exists
+    // Auto create conversation on demand if currently in lazy draft mode (activeConversationId === null)
     if (!conversationId) {
       try {
-        const newConversation = await createConversation(activeAssistantId);
+        const initialTitle = finalContent.slice(0, 40).trim() || "New Chat";
+        const newConversation = await createConversation(activeAssistantId, initialTitle);
         conversationId = newConversation.id;
         useConversationStore.getState().setActiveConversation(conversationId);
 
-        const updatedConversations = await getConversations(activeAssistantId);
-        useConversationStore.getState().setConversations(updatedConversations);
+        try {
+          const updatedConversations = await getConversations(activeAssistantId);
+          useConversationStore.getState().setConversations(updatedConversations);
+        } catch {
+          const currentList = useConversationStore.getState().conversations;
+          useConversationStore.getState().setConversations([newConversation, ...currentList]);
+        }
       } catch (err) {
         console.error("Failed to auto-create conversation", err);
       }
