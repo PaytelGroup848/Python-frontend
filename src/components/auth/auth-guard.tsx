@@ -106,7 +106,7 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     }
 
     // 2. Already authenticated with a valid active session (registered user or guest)
-    if (accessToken) return;
+    if (accessToken && !isJwtExpired(accessToken)) return;
 
     // 3. User explicitly requested login via ?auth=login
     if (authQuery === "login") return;
@@ -229,10 +229,10 @@ function AuthGuardContent({ children }: AuthGuardProps) {
           setGuestInitError(true);
         }
       } finally {
+        isInitiatingRef.current = false;
         if (isMounted) {
           setIsInitializingGuest(false);
         }
-        isInitiatingRef.current = false;
       }
     }
 
@@ -243,23 +243,24 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     };
   }, [hydrated, accessToken, authQuery, setAuth]);
 
-  // 1. Loading / Hydration / Guest Provisioning Phase: Render skeleton
-  if (!hydrated || isInitializingGuest) {
+  // 1. Initial hydration check: Wait until Zustand hydrates from localStorage
+  if (!hydrated) {
     return <WorkspaceSkeleton />;
   }
 
-  // 2. Authenticated (Registered user or Guest user with valid token): Render real workspace directly
+  // 2. Authenticated-First check: If valid access token exists, IMMEDIATELY render children!
+  // A valid session MUST NEVER be blocked by in-flight provisioning flags or unmount states.
   if (accessToken && !isJwtExpired(accessToken)) {
     return <>{children}</>;
   }
 
-  // 3. Fallback error state if network is completely unreachable
+  // 3. Fallback error state if provisioning permanently failed
   if (guestInitError) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 text-center">
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-50 p-6 text-center">
         <div className="max-w-md space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Connecting to AI Platform</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <h2 className="text-lg font-semibold text-slate-900">Connecting to AI Platform</h2>
+          <p className="text-sm text-slate-600">
             We couldn&apos;t automatically start your guest session. Please check your connection and try again.
           </p>
           <button
@@ -278,24 +279,23 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     );
   }
 
-  // 4. Fallback when user did NOT explicitly request ?auth=login: Keep showing skeleton while provisioning completes
-  if (authQuery !== "login") {
-    return <WorkspaceSkeleton />;
+  // 4. Explicit ?auth=login: Render centered AuthModal with preview
+  if (authQuery === "login") {
+    return (
+      <div className="relative h-screen w-screen overflow-hidden bg-slate-50 flex items-center justify-center transition-colors duration-200">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+          <div className="absolute -top-32 left-1/2 h-[520px] w-[1000px] -translate-x-1/2 rounded-full bg-emerald-200/40 blur-[120px]" />
+          <div className="absolute bottom-[-160px] left-[-80px] h-[480px] w-[800px] rounded-full bg-teal-200/30 blur-[120px]" />
+        </div>
+
+        <PublicWorkspacePreview />
+        <AuthModal isOpen={true} canClose={false} />
+      </div>
+    );
   }
 
-  // 5. Explicit ?auth=login: Render centered AuthModal
-  return (
-    <div className="relative h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors duration-200">
-      {/* Ambient emerald glow waves matching product */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute -top-32 left-1/2 h-[520px] w-[1000px] -translate-x-1/2 rounded-full bg-emerald-200/40 dark:bg-emerald-950/20 blur-[120px]" />
-        <div className="absolute bottom-[-160px] left-[-80px] h-[480px] w-[800px] rounded-full bg-teal-200/30 dark:bg-teal-950/15 blur-[120px]" />
-      </div>
-
-      <PublicWorkspacePreview />
-      <AuthModal isOpen={true} canClose={false} />
-    </div>
-  );
+  // 5. Default in-flight guest provisioning state: Render workspace skeleton matching chat palette
+  return <WorkspaceSkeleton />;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
