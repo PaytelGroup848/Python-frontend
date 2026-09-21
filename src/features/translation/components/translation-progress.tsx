@@ -24,7 +24,20 @@ export function TranslationProgress({ status }: TranslationProgressProps) {
       case "completed":
         return "Translation ready for preview & download!";
       case "failed":
-        return status.error_message || "Translation processing failed.";
+        if (status.error_message) {
+          const msg = status.error_message.toLowerCase();
+          if (msg.includes("503") || msg.includes("high demand") || msg.includes("unavailable")) {
+            return "AI servers are experiencing high demand. Please wait a moment and try again.";
+          }
+          if (msg.includes("429") || msg.includes("quota") || msg.includes("rate limit") || msg.includes("credit")) {
+            return "AI translation capacity limit reached. Please wait a moment before trying again.";
+          }
+          if (msg.includes("api key") || msg.includes("invalid") || msg.includes("openai")) {
+            return "AI translation service is momentarily refreshing. Please retry shortly.";
+          }
+          return status.error_message;
+        }
+        return "Translation was temporarily interrupted. Please click retry below.";
       default:
         return "Processing...";
     }
@@ -34,15 +47,17 @@ export function TranslationProgress({ status }: TranslationProgressProps) {
   const isCompleted = status.status === "completed";
 
   return (
-    <div className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+    <div className={`w-full p-4 rounded-2xl border transition-all ${
+      isFailed ? "bg-rose-50/60 border-rose-200" : "bg-slate-50 border border-slate-200"
+    }`}>
       <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0 pr-2">
           {isCompleted ? (
             <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
               <CheckCircle2 size={16} />
             </div>
           ) : isFailed ? (
-            <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
               <AlertCircle size={16} />
             </div>
           ) : (
@@ -50,12 +65,12 @@ export function TranslationProgress({ status }: TranslationProgressProps) {
               <Loader2 size={15} className="animate-spin text-emerald-600" />
             </div>
           )}
-          <span className="text-xs font-semibold text-slate-800 truncate">
+          <span className={`text-xs font-semibold ${isFailed ? "text-rose-900" : "text-slate-800"} leading-snug`}>
             {getStageDescription()}
           </span>
         </div>
 
-        <span className="text-xs font-bold text-slate-700 shrink-0">
+        <span className={`text-xs font-bold ${isFailed ? "text-rose-600" : "text-slate-700"} shrink-0`}>
           {status.progress_percent}%
         </span>
       </div>
