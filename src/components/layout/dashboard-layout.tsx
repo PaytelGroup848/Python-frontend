@@ -8,8 +8,9 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Link,
 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { useAuthStore } from "@/stores/auth-store";
@@ -96,14 +97,28 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           className="flex items-center gap-3 cursor-pointer group select-none"
         >
           <Link
-            className="relative flex items-center justify-center"
+            className="relative flex items-center justify-center p-3"
             href={"/"}
           >
-            <motion.span className="text-xl md:text-2xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 bg-clip-text text-transparent">
-                Patwatoli
-              </span>
-            </motion.span>
+            {isCollapsed ? (
+              <Image
+                src="/icon.png"
+                alt="Patwatoli"
+                width={32}
+                height={32}
+                priority
+                className="h-8 w-8 object-contain"
+              />
+            ) : (
+              <Image
+                src="/logo.png"
+                alt="Patwatoli AI"
+                width={140}
+                height={30}
+                priority
+                className="h-7 w-auto object-contain"
+              />
+            )}
           </Link>
         </motion.div>
 

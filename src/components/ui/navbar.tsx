@@ -240,6 +240,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X, Users, Briefcase, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -314,11 +315,14 @@ export function Navbar() {
               className="relative flex items-center justify-center"
               href={"/"}
             >
-              <motion.span className="text-xl md:text-2xl font-bold tracking-tight">
-                <span className="bg-linear-to-r from-emerald-500 via-green-500 to-emerald-600 bg-clip-text text-transparent">
-                  Patwatoli
-                </span>
-              </motion.span>
+              <Image
+                src="/logo.png"
+                alt="Patwatoli AI"
+                width={150}
+                height={32}
+                priority
+                className="h-8 w-auto object-contain"
+              />
             </Link>
           </motion.div>
 
