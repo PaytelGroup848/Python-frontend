@@ -30,6 +30,7 @@ import { SourcesDropdown } from "./sources-dropdown";
 import { RecommendedSuggestions } from "./recommended-suggestions";
 import { SpeechButton } from "./speech-button";
 import { DataTableCard } from "./data-table-card";
+import { MessageExportMenu } from "./message-export-menu";
 import { parseCsvToTableData } from "../utils/table-exporter";
 
 interface MessageListProps {
@@ -181,6 +182,9 @@ function AssistantActions({
           <Copy size={14} />
         )}
       </button>
+
+      {/* DOCUMENT EXPORT MENU (PDF, Word, Markdown, Text) */}
+      <MessageExportMenu content={content} />
 
       <button
         type="button"
