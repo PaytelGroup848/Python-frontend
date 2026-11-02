@@ -1,174 +1,239 @@
 /**
- * Microsoft Word (.docx / .doc) Document Builder
- * Generates an OpenXML compliant Word document with professional typography,
- * emerald headings, styled tables, and proper page margins.
+ * Microsoft Word (.docx) Document Builder
+ * Generates genuine OpenXML (.docx) binary packages with professional typography,
+ * branded headers, styled tables, and zero security warnings in Microsoft Word.
  */
 
-import { convertMarkdownToHtml } from "./markdown-to-html";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  ShadingType,
+  AlignmentType,
+  Footer,
+  PageNumber,
+} from "docx";
+import type { Tokens } from "marked";
+import { parseMarkdownToAst, extractPlainTextFromToken } from "./markdown-ast";
+import { saveFile } from "./file-saver";
 
-export function exportAsDocx(markdown: string, filename = "document"): void {
-  const safeFilename = `${filename.replace(/[^a-zA-Z0-9_-]/g, "_")}.doc`;
-  const bodyHtml = convertMarkdownToHtml(markdown);
+const BRAND_EMERALD = "059669";
+const BRAND_DARK = "0F172A";
+const TEXT_MUTED = "64748B";
+const BG_ZEBRA = "F8FAFC";
+const BORDER_LIGHT = "E2E8F0";
 
-  const wordDocumentHtml = `<!DOCTYPE html>
-<html xmlns:o='urn:schemas-microsoft-com:office:office'
-      xmlns:w='urn:schemas-microsoft-com:office:word'
-      xmlns='http://www.w3.org/TR/REC-html40'>
-<head>
-  <meta charset='utf-8'>
-  <title>${escapeXml(filename)}</title>
-  <!--[if gte mso 9]>
-  <xml>
-    <w:WordDocument>
-      <w:View>Print</w:View>
-      <w:Zoom>100</w:Zoom>
-      <w:DoNotOptimizeForBrowser/>
-    </w:WordDocument>
-  </xml>
-  <![endif]-->
-  <style>
-    @page Section1 {
-      size: 595.3pt 841.9pt; /* Standard A4 */
-      margin: 70.85pt 70.85pt 70.85pt 70.85pt; /* 2.5cm standard margins */
-      mso-header-margin: 35.4pt;
-      mso-footer-margin: 35.4pt;
-      mso-paper-source: 0;
-    }
-    div.Section1 {
-      page: Section1;
-    }
-    body {
-      font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
-      font-size: 11pt;
-      line-height: 1.5;
-      color: #1e293b;
-    }
-    h1 {
-      font-size: 20pt;
-      color: #047857; /* Emerald primary */
-      font-weight: bold;
-      margin-top: 20pt;
-      margin-bottom: 8pt;
-      border-bottom: 1.5pt solid #10b981;
-      padding-bottom: 4pt;
-    }
-    h2 {
-      font-size: 15pt;
-      color: #0f172a;
-      font-weight: bold;
-      margin-top: 16pt;
-      margin-bottom: 6pt;
-    }
-    h3 {
-      font-size: 12.5pt;
-      color: #334155;
-      font-weight: bold;
-      margin-top: 12pt;
-      margin-bottom: 4pt;
-    }
-    p {
-      margin-top: 0;
-      margin-bottom: 8pt;
-    }
-    ul, ol {
-      margin-top: 0;
-      margin-bottom: 8pt;
-      padding-left: 24pt;
-    }
-    li {
-      margin-bottom: 4pt;
-    }
-    strong {
-      color: #0f172a;
-      font-weight: bold;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 10pt;
-      margin-bottom: 14pt;
-    }
-    th {
-      background-color: #059669;
-      color: #ffffff;
-      font-weight: bold;
-      padding: 6pt 10pt;
-      border: 1pt solid #047857;
-      text-align: left;
-    }
-    td {
-      padding: 5pt 10pt;
-      border: 1pt solid #cbd5e1;
-      font-size: 10.5pt;
-    }
-    tr:nth-child(even) td {
-      background-color: #f8fafc;
-    }
-    pre {
-      background-color: #f1f5f9;
-      border: 1pt solid #e2e8f0;
-      padding: 8pt 10pt;
-      border-radius: 4pt;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 9.5pt;
-      line-height: 1.4;
-      margin-top: 8pt;
-      margin-bottom: 10pt;
-    }
-    code {
-      font-family: 'Consolas', monospace;
-      background-color: #f1f5f9;
-      padding: 2pt 4pt;
-      border-radius: 3pt;
-      font-size: 10pt;
-      color: #0f172a;
-    }
-    blockquote {
-      border-left: 3pt solid #10b981;
-      padding-left: 10pt;
-      margin-left: 0;
-      margin-top: 8pt;
-      margin-bottom: 8pt;
-      color: #475569;
-      font-style: italic;
-    }
-    .footer-stamp {
-      margin-top: 24pt;
-      padding-top: 8pt;
-      border-top: 0.5pt solid #e2e8f0;
-      font-size: 9pt;
-      color: #94a3b8;
-      text-align: right;
-    }
-  </style>
-</head>
-<body>
-  <div class="Section1">
-    ${bodyHtml}
-    <div class="footer-stamp">
-      Generated with Patwatoli AI &bull; ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-    </div>
-  </div>
-</body>
-</html>`;
+export async function exportAsDocx(
+  markdown: string,
+  filename = "document"
+): Promise<void> {
+  const safeFilename = `${filename.replace(/[^a-zA-Z0-9_-]/g, "_")}.docx`;
+  const tokens = parseMarkdownToAst(markdown);
+  const docElements: (Paragraph | Table)[] = [];
 
-  const blob = new Blob(["\uFEFF" + wordDocumentHtml], {
-    type: "application/msword;charset=utf-8;",
+  for (const token of tokens) {
+    if (token.type === "heading") {
+      const headingLevel =
+        token.depth === 1
+          ? HeadingLevel.HEADING_1
+          : token.depth === 2
+          ? HeadingLevel.HEADING_2
+          : HeadingLevel.HEADING_3;
+
+      docElements.push(
+        new Paragraph({
+          text: token.text,
+          heading: headingLevel,
+          spacing: { before: token.depth === 1 ? 360 : 240, after: 120 },
+        })
+      );
+    } else if (token.type === "paragraph") {
+      docElements.push(
+        new Paragraph({
+          children: parseInlineRuns(token.text),
+          spacing: { before: 80, after: 140, line: 320 },
+        })
+      );
+    } else if (token.type === "list") {
+      const listToken = token as Tokens.List;
+      listToken.items.forEach((item: Tokens.ListItem) => {
+        docElements.push(
+          new Paragraph({
+            children: parseInlineRuns(item.text),
+            bullet: listToken.ordered ? undefined : { level: 0 },
+            spacing: { before: 40, after: 60 },
+          })
+        );
+      });
+    } else if (token.type === "code") {
+      docElements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: token.text,
+              font: "Consolas",
+              size: 19,
+              color: BRAND_DARK,
+            }),
+          ],
+          shading: { type: ShadingType.CLEAR, fill: "F1F5F9" },
+          border: {
+            left: { style: BorderStyle.SINGLE, size: 4, color: BORDER_LIGHT },
+            right: { style: BorderStyle.SINGLE, size: 4, color: BORDER_LIGHT },
+            top: { style: BorderStyle.SINGLE, size: 4, color: BORDER_LIGHT },
+            bottom: { style: BorderStyle.SINGLE, size: 4, color: BORDER_LIGHT },
+          },
+          spacing: { before: 160, after: 160 },
+        })
+      );
+    } else if (token.type === "blockquote") {
+      docElements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: extractPlainTextFromToken(token),
+              italics: true,
+              color: TEXT_MUTED,
+            }),
+          ],
+          border: {
+            left: { style: BorderStyle.SINGLE, size: 16, color: BRAND_EMERALD },
+          },
+          indent: { left: 360 },
+          spacing: { before: 140, after: 140 },
+        })
+      );
+    } else if (token.type === "table") {
+      const tableToken = token as Tokens.Table;
+      const rows: TableRow[] = [];
+
+      // Header row
+      const headerCells = tableToken.header.map(
+        (cell: Tokens.TableCell) =>
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: cell.text,
+                    bold: true,
+                    color: "FFFFFF",
+                  }),
+                ],
+                alignment: AlignmentType.LEFT,
+              }),
+            ],
+            shading: { type: ShadingType.CLEAR, fill: BRAND_EMERALD },
+            margins: { top: 120, bottom: 120, left: 160, right: 160 },
+          })
+      );
+      rows.push(new TableRow({ children: headerCells }));
+
+      // Data rows
+      tableToken.rows.forEach((row: Tokens.TableCell[], rowIdx: number) => {
+        const isZebra = rowIdx % 2 === 1;
+        const dataCells = row.map(
+          (cell: Tokens.TableCell) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: parseInlineRuns(cell.text),
+                  alignment: AlignmentType.LEFT,
+                }),
+              ],
+              shading: isZebra
+                ? { type: ShadingType.CLEAR, fill: BG_ZEBRA }
+                : undefined,
+              margins: { top: 100, bottom: 100, left: 160, right: 160 },
+            })
+        );
+        rows.push(new TableRow({ children: dataCells }));
+      });
+
+      docElements.push(
+        new Table({
+          rows,
+          width: { size: 100, type: WidthType.PERCENTAGE },
+        })
+      );
+    }
+  }
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }, // 1 inch
+          },
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: "Patwatoli AI • Page ",
+                    size: 18,
+                    color: TEXT_MUTED,
+                  }),
+                  new TextRun({
+                    children: [PageNumber.CURRENT],
+                    size: 18,
+                    color: TEXT_MUTED,
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
+        children: docElements,
+      },
+    ],
   });
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = safeFilename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const blob = await Packer.toBlob(doc);
+  saveFile(
+    blob,
+    safeFilename,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  );
 }
 
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+/**
+ * Parses markdown inline styles (bold, italic, code) into typed TextRun instances.
+ */
+function parseInlineRuns(text: string): TextRun[] {
+  const runs: TextRun[] = [];
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|[^*`]+)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    const part = match[0];
+    if (part.startsWith("**") && part.endsWith("**")) {
+      runs.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+    } else if (part.startsWith("*") && part.endsWith("*")) {
+      runs.push(new TextRun({ text: part.slice(1, -1), italics: true }));
+    } else if (part.startsWith("`") && part.endsWith("`")) {
+      runs.push(
+        new TextRun({
+          text: part.slice(1, -1),
+          font: "Consolas",
+          shading: { type: ShadingType.CLEAR, fill: "F1F5F9" },
+        })
+      );
+    } else {
+      runs.push(new TextRun({ text: part }));
+    }
+  }
+
+  return runs.length > 0 ? runs : [new TextRun({ text })];
 }

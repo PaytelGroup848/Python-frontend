@@ -7,4 +7,5 @@
 export { exportAsDocx } from "./docx-builder";
 export { exportAsPdf } from "./pdf-builder";
 export { exportAsMarkdown, exportAsPlainText } from "./text-builder";
-export { convertMarkdownToHtml } from "./markdown-to-html";
+export { parseMarkdownToAst, cleanMarkdownContent } from "./markdown-ast";
+export { saveFile } from "./file-saver";

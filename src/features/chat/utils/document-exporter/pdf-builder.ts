@@ -1,227 +1,190 @@
 /**
  * Vector PDF Exporter Engine
- * Generates an isolated A4 printable canvas with high-resolution typography,
- * emerald headings, styled tables, and triggers the native vector PDF print engine.
+ * Generates true binary PDF documents with high-resolution typography,
+ * branded headers, styled tables, page numbers, and direct background downloads.
  */
 
-import { convertMarkdownToHtml } from "./markdown-to-html";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import type { Tokens } from "marked";
+import { parseMarkdownToAst, extractPlainTextFromToken } from "./markdown-ast";
+
+const BRAND_EMERALD = [5, 150, 105] as const;
+const BRAND_DARK = [15, 23, 42] as const;
+const TEXT_MUTED = [100, 116, 139] as const;
 
 export function exportAsPdf(markdown: string, title = "Document"): void {
-  const bodyHtml = convertMarkdownToHtml(markdown);
-  const formattedDate = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  const safeFilename = `${title.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
   });
 
-  const printDocumentHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${escapeHtml(title)}</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 20mm 15mm 20mm 15mm;
-    }
-    @media print {
-      body {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      font-size: 10.5pt;
-      line-height: 1.6;
-      color: #1e293b;
-      margin: 0;
-      padding: 20px;
-    }
-    .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #059669;
-      padding-bottom: 8px;
-      margin-bottom: 24px;
-    }
-    .brand-title {
-      font-size: 14pt;
-      font-weight: 800;
-      color: #059669;
-      letter-spacing: -0.5px;
-    }
-    .date-badge {
-      font-size: 9pt;
-      color: #64748b;
-    }
-    h1 {
-      font-size: 20pt;
-      color: #0f172a;
-      font-weight: 800;
-      margin-top: 16px;
-      margin-bottom: 10px;
-      letter-spacing: -0.5px;
-    }
-    h2 {
-      font-size: 14pt;
-      color: #059669;
-      font-weight: 700;
-      margin-top: 20px;
-      margin-bottom: 8px;
-      border-left: 3px solid #059669;
-      padding-left: 8px;
-    }
-    h3 {
-      font-size: 12pt;
-      color: #334155;
-      font-weight: 700;
-      margin-top: 14px;
-      margin-bottom: 6px;
-    }
-    p {
-      margin-top: 0;
-      margin-bottom: 10px;
-      text-align: justify;
-    }
-    ul, ol {
-      margin-top: 0;
-      margin-bottom: 12px;
-      padding-left: 24px;
-    }
-    li {
-      margin-bottom: 4px;
-    }
-    strong {
-      color: #0f172a;
-      font-weight: 700;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      margin-bottom: 16px;
-      font-size: 9.5pt;
-    }
-    th {
-      background-color: #059669 !important;
-      color: #ffffff !important;
-      font-weight: 700;
-      padding: 8px 10px;
-      border: 1px solid #047857;
-      text-align: left;
-    }
-    td {
-      padding: 6px 10px;
-      border: 1px solid #cbd5e1;
-    }
-    tr:nth-child(even) td {
-      background-color: #f8fafc !important;
-    }
-    pre {
-      background-color: #f1f5f9 !important;
-      border: 1px solid #cbd5e1;
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 9pt;
-      line-height: 1.4;
-      overflow-x: auto;
-      margin-top: 10px;
-      margin-bottom: 14px;
-      white-space: pre-wrap;
-    }
-    code {
-      font-family: 'Consolas', monospace;
-      background-color: #f1f5f9;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-size: 9.5pt;
-      color: #0f172a;
-    }
-    blockquote {
-      border-left: 3px solid #059669;
-      padding-left: 12px;
-      margin-left: 0;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      color: #475569;
-      font-style: italic;
-      background-color: #f8fafc;
-      padding-top: 4px;
-      padding-bottom: 4px;
-    }
-    .footer-stamp {
-      margin-top: 32px;
-      padding-top: 12px;
-      border-top: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      font-size: 8.5pt;
-      color: #94a3b8;
-    }
-  </style>
-</head>
-<body>
-  <div class="header-bar">
-    <div class="brand-title">Patwatoli AI</div>
-    <div class="date-badge">${formattedDate}</div>
-  </div>
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const marginX = 18;
+  const contentWidth = pageWidth - marginX * 2;
+  let cursorY = 26;
 
-  <div class="content-body">
-    ${bodyHtml}
-  </div>
-
-  <div class="footer-stamp">
-    <span>Enterprise Intelligence Platform</span>
-    <span>Generated via Patwatoli AI &bull; Confidential &bull; Page 1</span>
-  </div>
-</body>
-</html>`;
-
-  // Create isolated hidden iframe for printing
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow?.document;
-  if (!doc) {
-    document.body.removeChild(iframe);
-    return;
-  }
-
-  doc.open();
-  doc.write(printDocumentHtml);
-  doc.close();
-
-  iframe.onload = () => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch (e) {
-      console.error("PDF Print failed:", e);
-    } finally {
-      setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 1000);
+  const checkPageBreak = (neededHeight: number) => {
+    if (cursorY + neededHeight > pageHeight - 22) {
+      doc.addPage();
+      cursorY = 24;
     }
   };
-}
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  // Header Banner
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...BRAND_EMERALD);
+  doc.text("Patwatoli AI", marginX, 16);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...TEXT_MUTED);
+  const dateStr = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  doc.text(dateStr, pageWidth - marginX, 16, { align: "right" });
+
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.line(marginX, 19, pageWidth - marginX, 19);
+
+  const tokens = parseMarkdownToAst(markdown);
+
+  for (const token of tokens) {
+    if (token.type === "heading") {
+      const fontSize = token.depth === 1 ? 16 : token.depth === 2 ? 12.5 : 10.5;
+      const spacingBefore = token.depth === 1 ? 8 : 6;
+      checkPageBreak(fontSize + spacingBefore + 4);
+
+      cursorY += spacingBefore;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(fontSize);
+
+      if (token.depth === 1) {
+        doc.setTextColor(...BRAND_DARK);
+      } else if (token.depth === 2) {
+        doc.setTextColor(...BRAND_EMERALD);
+      } else {
+        doc.setTextColor(51, 65, 85);
+      }
+
+      doc.text(token.text, marginX, cursorY);
+      cursorY += fontSize * 0.45 + 3;
+    } else if (token.type === "paragraph") {
+      const cleanText = extractPlainTextFromToken(token);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...BRAND_DARK);
+
+      const lines = doc.splitTextToSize(cleanText, contentWidth);
+      checkPageBreak(lines.length * 4.6 + 4);
+
+      doc.text(lines, marginX, cursorY);
+      cursorY += lines.length * 4.6 + 3;
+    } else if (token.type === "list") {
+      const listToken = token as Tokens.List;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...BRAND_DARK);
+
+      listToken.items.forEach((item: Tokens.ListItem, idx: number) => {
+        const itemText = extractPlainTextFromToken(item);
+        const prefix = listToken.ordered ? `${idx + 1}. ` : "• ";
+        const lines = doc.splitTextToSize(itemText, contentWidth - 8);
+        checkPageBreak(lines.length * 4.6 + 2);
+
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...BRAND_EMERALD);
+        doc.text(prefix, marginX + 2, cursorY);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...BRAND_DARK);
+        doc.text(lines, marginX + 8, cursorY);
+        cursorY += lines.length * 4.6 + 2;
+      });
+      cursorY += 2;
+    } else if (token.type === "code") {
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8.5);
+      const lines = doc.splitTextToSize(token.text, contentWidth - 8);
+      const boxHeight = lines.length * 4.2 + 6;
+
+      checkPageBreak(boxHeight + 4);
+      doc.setFillColor(241, 245, 249);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(marginX, cursorY, contentWidth, boxHeight, 1.5, 1.5, "FD");
+
+      doc.setTextColor(...BRAND_DARK);
+      doc.text(lines, marginX + 4, cursorY + 5);
+      cursorY += boxHeight + 4;
+    } else if (token.type === "table") {
+      const tableToken = token as Tokens.Table;
+      const head = [tableToken.header.map((h: Tokens.TableCell) => h.text)];
+      const body = tableToken.rows.map((r: Tokens.TableCell[]) =>
+        r.map((c: Tokens.TableCell) => c.text)
+      );
+
+      checkPageBreak(25);
+
+      const generateAutoTable =
+        typeof autoTable === "function" ? autoTable : (autoTable as any).default;
+
+      generateAutoTable(doc, {
+        head,
+        body,
+        startY: cursorY + 2,
+        margin: { left: marginX, right: marginX },
+        theme: "striped",
+        headStyles: {
+          fillColor: [5, 150, 105],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
+          cellPadding: 2.5,
+        },
+        bodyStyles: {
+          textColor: [30, 41, 59],
+          fontSize: 8.5,
+          cellPadding: 2.2,
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        tableLineColor: [226, 232, 240],
+        tableLineWidth: 0.2,
+      });
+
+      const finalY = (doc as any).lastAutoTable?.finalY;
+      if (finalY) {
+        cursorY = finalY + 6;
+      }
+    }
+  }
+
+  // Add Page Numbers & Footer on each page
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...TEXT_MUTED);
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.2);
+    doc.line(marginX, pageHeight - 14, pageWidth - marginX, pageHeight - 14);
+
+    doc.text("Patwatoli AI • Enterprise Intelligence", marginX, pageHeight - 9);
+    doc.text(`Page ${p} of ${totalPages}`, pageWidth - marginX, pageHeight - 9, {
+      align: "right",
+    });
+  }
+
+  // Trigger direct binary download
+  doc.save(safeFilename);
 }

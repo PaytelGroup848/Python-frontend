@@ -6,6 +6,7 @@ import {
   FileText,
   Copy,
   Check,
+  Loader2,
   Table as TableIcon,
 } from "lucide-react";
 import {
@@ -29,6 +30,7 @@ export function DataTableCard({
 }: DataTableCardProps) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [copied, setCopied] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [stats, setStats] = useState<{ rows: number; cols: number }>({
     rows: initialRows?.length || 0,
     cols: initialHeaders?.length || 0,
@@ -93,9 +95,17 @@ export function DataTableCard({
     }
   }, [children, initialHeaders, initialRows]);
 
-  const handleDownloadExcel = () => {
-    const { headers, rows } = getTableData();
-    exportTableToExcel(headers, rows, "patwatoli_data_sheet");
+  const handleDownloadExcel = async () => {
+    if (exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      const { headers, rows } = getTableData();
+      await exportTableToExcel(headers, rows, "patwatoli_data_sheet");
+    } catch (err) {
+      console.error("Excel export error:", err);
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   const handleDownloadCsv = () => {
@@ -133,15 +143,20 @@ export function DataTableCard({
 
         {/* Right: Export buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Download Excel (.xls) */}
+          {/* Download Excel (.xlsx) */}
           <button
             type="button"
             onClick={handleDownloadExcel}
-            title="Download formatted Excel spreadsheet"
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer"
+            disabled={exportingExcel}
+            title="Download formatted OpenXML Excel spreadsheet (.xlsx)"
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
           >
-            <FileSpreadsheet size={13} className="shrink-0" />
-            <span>Excel (.xls)</span>
+            {exportingExcel ? (
+              <Loader2 size={13} className="animate-spin shrink-0" />
+            ) : (
+              <FileSpreadsheet size={13} className="shrink-0" />
+            )}
+            <span>Excel (.xlsx)</span>
           </button>
 
           {/* Download CSV */}
@@ -178,20 +193,20 @@ export function DataTableCard({
       </div>
 
       {/* TABLE RENDERER CONTAINER */}
-      <div className="w-full overflow-x-auto max-h-96 overflow-y-auto">
+      <div className="overflow-x-auto p-0 max-h-[480px]">
         {children ? (
-          <div ref={tableRef as unknown as React.RefObject<HTMLDivElement>} className="[&_table]:w-full [&_table]:border-collapse [&_th]:bg-slate-100/90 dark:[&_th]:bg-slate-800/80 [&_th]:text-slate-800 dark:[&_th]:text-slate-200 [&_th]:font-semibold [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:border-b [&_th]:border-slate-200 dark:[&_th]:border-slate-700 [&_td]:px-4 [&_td]:py-2 [&_td]:text-xs [&_td]:text-slate-700 dark:[&_td]:text-slate-300 [&_td]:border-b [&_td]:border-slate-100 dark:[&_td]:border-slate-800 [&_tbody_tr:hover]:bg-emerald-50/40 dark:[&_tbody_tr:hover]:bg-emerald-950/20 [&_tbody_tr:nth-child(even)]:bg-slate-50/50 dark:[&_tbody_tr:nth-child(even)]:bg-slate-800/30">
+          <div ref={tableRef as any} className="data-table-wrapper w-full">
             {children}
           </div>
         ) : (
-          <table ref={tableRef} className="w-full border-collapse text-xs">
+          <table ref={tableRef} className="w-full text-left text-xs border-collapse">
             {initialHeaders && initialHeaders.length > 0 && (
               <thead>
-                <tr className="bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-100/75 dark:bg-slate-800/60">
                   {initialHeaders.map((h, i) => (
                     <th
                       key={i}
-                      className="px-4 py-2.5 text-left font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200"
+                      className="px-3.5 py-2.5 font-semibold text-slate-900 dark:text-slate-100 border-r border-slate-200/60 dark:border-slate-800/60 last:border-r-0"
                     >
                       {h}
                     </th>
@@ -200,19 +215,23 @@ export function DataTableCard({
               </thead>
             )}
             <tbody>
-              {initialRows &&
-                initialRows.map((row, rIdx) => (
-                  <tr
-                    key={rIdx}
-                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-colors odd:bg-white dark:odd:bg-slate-900 even:bg-slate-50/50 dark:even:bg-slate-800/30"
-                  >
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx} className="px-4 py-2 text-slate-700 dark:text-slate-300 font-mono">
-                        {String(cell)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+              {initialRows?.map((row, rowIdx) => (
+                <tr
+                  key={rowIdx}
+                  className={`border-b border-slate-100 dark:border-slate-800/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-colors ${
+                    rowIdx % 2 === 1 ? "bg-slate-50/50 dark:bg-slate-900/40" : ""
+                  }`}
+                >
+                  {row.map((cell, cellIdx) => (
+                    <td
+                      key={cellIdx}
+                      className="px-3.5 py-2 text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-slate-800/40 last:border-r-0"
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
             </tbody>
           </table>
         )}

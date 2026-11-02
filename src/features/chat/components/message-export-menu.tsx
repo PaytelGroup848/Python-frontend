@@ -35,7 +35,7 @@ export function MessageExportMenu({
   const [downloading, setDownloading] = useState(false);
   const [downloadedType, setDownloadedType] = useState<string | null>(null);
 
-  const handleExport = (type: "pdf" | "docx" | "md" | "txt") => {
+  const handleExport = async (type: "pdf" | "docx" | "md" | "txt") => {
     if (!content || downloading) return;
     setDownloading(true);
 
@@ -43,7 +43,7 @@ export function MessageExportMenu({
       if (type === "pdf") {
         exportAsPdf(content, title);
       } else if (type === "docx") {
-        exportAsDocx(content, title);
+        await exportAsDocx(content, title);
       } else if (type === "md") {
         exportAsMarkdown(content, title);
       } else if (type === "txt") {
@@ -53,7 +53,7 @@ export function MessageExportMenu({
       setDownloadedType(type);
       setTimeout(() => setDownloadedType(null), 2000);
     } catch (err) {
-      console.error("Export error:", err);
+      console.error("Document Export error:", err);
     } finally {
       setDownloading(false);
     }
@@ -64,7 +64,7 @@ export function MessageExportMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="Export response as PDF, Word, or Markdown"
+          title="Export response as PDF, Word (.docx), Markdown, or Text"
           aria-label="Export response"
           className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 text-slate-400 transition-colors cursor-pointer"
         >
@@ -95,11 +95,11 @@ export function MessageExportMenu({
           <FileText size={14} className="text-rose-500 shrink-0" />
           <div className="flex flex-col">
             <span className="font-medium text-slate-800 dark:text-slate-200">PDF Document</span>
-            <span className="text-[10px] text-slate-400">Formatted A4 vector print (.pdf)</span>
+            <span className="text-[10px] text-slate-400">Direct vector download (.pdf)</span>
           </div>
         </DropdownMenuItem>
 
-        {/* 2. Word Document (.doc / .docx) */}
+        {/* 2. Word Document (.docx) */}
         <DropdownMenuItem
           onClick={() => handleExport("docx")}
           className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
@@ -107,7 +107,7 @@ export function MessageExportMenu({
           <File size={14} className="text-blue-600 shrink-0" />
           <div className="flex flex-col">
             <span className="font-medium text-slate-800 dark:text-slate-200">Word Document</span>
-            <span className="text-[10px] text-slate-400">Editable OpenXML (.doc / .docx)</span>
+            <span className="text-[10px] text-slate-400">Genuine OpenXML (.docx)</span>
           </div>
         </DropdownMenuItem>
 

@@ -255,9 +255,13 @@ export function MessageInput({
               key={doc.filename}
               className="flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-800 px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200 shadow-2xs"
             >
-              <span>
-                {doc.filename.match(/\.(png|jpe?g|webp|gif|bmp)$/i) ? "🖼️ " : "📄 "}
-                {doc.filename}
+              <span className="flex items-center gap-1.5">
+                {doc.filename.match(/\.(png|jpe?g|webp|gif|bmp)$/i) ? (
+                  <ImageIcon className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                )}
+                <span className="truncate max-w-[180px]">{doc.filename}</span>
               </span>
               <button
                 type="button"
