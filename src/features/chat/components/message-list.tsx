@@ -29,6 +29,8 @@ import { ReasoningAccordion } from "./reasoning-accordion";
 import { SourcesDropdown } from "./sources-dropdown";
 import { RecommendedSuggestions } from "./recommended-suggestions";
 import { SpeechButton } from "./speech-button";
+import { DataTableCard } from "./data-table-card";
+import { parseCsvToTableData } from "../utils/table-exporter";
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -327,12 +329,22 @@ function AssistantMessageItem({
       li({ children }) {
         return <li className="leading-relaxed pl-1 text-slate-800 dark:text-slate-100 marker:text-slate-400 dark:marker:text-slate-500">{children}</li>;
       },
+      table({ children }) {
+        return <DataTableCard>{children}</DataTableCard>;
+      },
       blockquote({ children }) {
         return <blockquote className="border-l-4 border-emerald-500 bg-slate-50 dark:bg-slate-800/60 pl-3 py-1.5 my-2 text-slate-700 dark:text-slate-200 rounded-r-lg italic">{children}</blockquote>;
       },
       code({ className, children }) {
         const match = /language-(\w+)/.exec(className || "");
         const codeString = String(children).replace(/\n$/, "");
+        if (match && match[1] === "csv") {
+          const { headers, rows } = parseCsvToTableData(codeString);
+          if (headers.length > 0 && rows.length > 0) {
+            return <DataTableCard headers={headers} rows={rows} title="CSV Spreadsheet" />;
+          }
+        }
+
 
         return match ? (
           <CodeBlock language={match[1]} code={codeString} onRunPreview={onRunPreview} />
