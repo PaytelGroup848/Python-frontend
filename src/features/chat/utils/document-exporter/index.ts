@@ -9,3 +9,8 @@ export { exportAsPdf } from "./pdf-builder";
 export { exportAsMarkdown, exportAsPlainText } from "./text-builder";
 export { parseMarkdownToAst, cleanMarkdownContent } from "./markdown-ast";
 export { saveFile } from "./file-saver";
+export {
+  detectExportIntent,
+  extractDocumentTitle,
+  type ExportIntent,
+} from "./intent-detector";

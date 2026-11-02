@@ -5,9 +5,19 @@
  */
 
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { applyPlugin } from "jspdf-autotable";
 import type { Tokens } from "marked";
 import { parseMarkdownToAst, extractPlainTextFromToken } from "./markdown-ast";
+import { saveFile } from "./file-saver";
+
+// Register autoTable plugin to jsPDF prototype
+if (typeof applyPlugin === "function") {
+  try {
+    applyPlugin(jsPDF);
+  } catch {
+    // Already registered or handled
+  }
+}
 
 const BRAND_EMERALD = [5, 150, 105] as const;
 const BRAND_DARK = [15, 23, 42] as const;
@@ -132,37 +142,36 @@ export function exportAsPdf(markdown: string, title = "Document"): void {
 
       checkPageBreak(25);
 
-      const generateAutoTable =
-        typeof autoTable === "function" ? autoTable : (autoTable as any).default;
+      if (typeof (doc as any).autoTable === "function") {
+        (doc as any).autoTable({
+          head,
+          body,
+          startY: cursorY + 2,
+          margin: { left: marginX, right: marginX },
+          theme: "striped",
+          headStyles: {
+            fillColor: [5, 150, 105],
+            textColor: [255, 255, 255],
+            fontStyle: "bold",
+            fontSize: 9,
+            cellPadding: 2.5,
+          },
+          bodyStyles: {
+            textColor: [30, 41, 59],
+            fontSize: 8.5,
+            cellPadding: 2.2,
+          },
+          alternateRowStyles: {
+            fillColor: [248, 250, 252],
+          },
+          tableLineColor: [226, 232, 240],
+          tableLineWidth: 0.2,
+        });
 
-      generateAutoTable(doc, {
-        head,
-        body,
-        startY: cursorY + 2,
-        margin: { left: marginX, right: marginX },
-        theme: "striped",
-        headStyles: {
-          fillColor: [5, 150, 105],
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-          fontSize: 9,
-          cellPadding: 2.5,
-        },
-        bodyStyles: {
-          textColor: [30, 41, 59],
-          fontSize: 8.5,
-          cellPadding: 2.2,
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252],
-        },
-        tableLineColor: [226, 232, 240],
-        tableLineWidth: 0.2,
-      });
-
-      const finalY = (doc as any).lastAutoTable?.finalY;
-      if (finalY) {
-        cursorY = finalY + 6;
+        const finalY = (doc as any).lastAutoTable?.finalY;
+        if (finalY) {
+          cursorY = finalY + 6;
+        }
       }
     }
   }
@@ -185,6 +194,7 @@ export function exportAsPdf(markdown: string, title = "Document"): void {
     });
   }
 
-  // Trigger direct binary download
-  doc.save(safeFilename);
+  // Trigger direct binary download via native Blob saveFile
+  const blob = doc.output("blob");
+  saveFile(blob, safeFilename, "application/pdf");
 }

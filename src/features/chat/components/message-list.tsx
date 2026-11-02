@@ -31,6 +31,8 @@ import { RecommendedSuggestions } from "./recommended-suggestions";
 import { SpeechButton } from "./speech-button";
 import { DataTableCard } from "./data-table-card";
 import { MessageExportMenu } from "./message-export-menu";
+import { ChatExportCard } from "./chat-export-card";
+import { detectExportIntent } from "../utils/document-exporter";
 import { parseCsvToTableData } from "../utils/table-exporter";
 
 interface MessageListProps {
@@ -270,6 +272,7 @@ function AssistantActions({
 
 interface AssistantMessageItemProps {
   message: ChatMessage;
+  previousUserPrompt?: string;
   isStreaming: boolean;
   isLastMessage: boolean;
   onRunPreview?: (code: string, language: string) => void;
@@ -278,12 +281,18 @@ interface AssistantMessageItemProps {
 
 function AssistantMessageItem({
   message,
+  previousUserPrompt,
   isStreaming,
   isLastMessage,
   onRunPreview,
   onSuggestionClick,
 }: AssistantMessageItemProps) {
   const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+
+  const exportIntent = useMemo(
+    () => detectExportIntent(previousUserPrompt || message.content),
+    [previousUserPrompt, message.content]
+  );
 
   // 1. Separate Chain-of-Thought reasoning from answer content
   const {
@@ -425,6 +434,11 @@ function AssistantMessageItem({
             {displayContent}
           </ReactMarkdown>
         </div>
+
+        {/* INTENT-AWARE EXPORT FILE CARD (CHATGPT STANDARD) */}
+        {!isStreaming && exportIntent && (
+          <ChatExportCard intent={exportIntent} content={cleanContent} />
+        )}
 
         {/* SUGGESTION CHIPS (Fallback: only if code present and dynamic suggestions absent) */}
         {message.role === "assistant" && message.content.includes("```") && suggestions.length === 0 && (
@@ -671,6 +685,12 @@ export function MessageList({
             /* ASSISTANT MESSAGE (CHATGPT-STYLE PLANE / FLAT) */
             <AssistantMessageItem
               message={message}
+              previousUserPrompt={
+                messages
+                  .slice(0, messages.findIndex((m) => m.id === message.id))
+                  .reverse()
+                  .find((m) => m.role === "user")?.content
+              }
               isStreaming={isStreaming}
               isLastMessage={message.id === messages[messages.length - 1]?.id}
               onRunPreview={onRunPreview}
