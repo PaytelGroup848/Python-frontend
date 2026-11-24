@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Script from 'next/script';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
@@ -5,9 +6,17 @@ import './globals.css';
 import '@/components/landing/landing-navbar.css';
 import '@/components/landing/landing-footer.css';
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL('https://patwatoliai.com'),
   title: 'Patwatoli AI',
   description: 'Landing page for Patwatoli AI',
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
