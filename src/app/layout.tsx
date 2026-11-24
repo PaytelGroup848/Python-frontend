@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { MetaPixel } from '@/components/analytics/meta-pixel';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import './globals.css';
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+        <MetaPixel />
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-5DFTNG97"
