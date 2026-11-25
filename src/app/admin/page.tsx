@@ -56,7 +56,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-8">
 
       {/* Dashboard Header */}
 

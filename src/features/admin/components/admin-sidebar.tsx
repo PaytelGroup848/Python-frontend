@@ -191,21 +191,25 @@ export function AdminSidebar() {
     w-72
     flex-col
     border-r
+    border-zinc-200
+    dark:border-zinc-800
     bg-white
+    dark:bg-slate-900
     p-4
+    shrink-0
   "
 >
 
-      <div className="mb-8">
+      <div className="mb-6 shrink-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-zinc-900">
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
             AI Platform
           </h1>
           <span
             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ${
               isSuper
-                ? "bg-purple-100 text-purple-700 border border-purple-200"
-                : "bg-blue-100 text-blue-700 border border-blue-200"
+                ? "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                : "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
             }`}
           >
             {isSuper ? "Super Admin" : "Sub Admin"}
@@ -217,7 +221,7 @@ export function AdminSidebar() {
         </p>
       </div>
 
-      <nav className="space-y-6 flex-1">
+      <nav className="space-y-6 flex-1 overflow-y-auto min-h-0 pr-1.5 [scrollbar-width:thin]">
         {visibleSections.map((section) => (
           <div key={section.title}>
             <p className="mb-2 text-xs font-semibold text-zinc-400">
@@ -239,8 +243,8 @@ export function AdminSidebar() {
                       flex items-center gap-3 rounded-lg px-3 py-2 transition
                       ${
                         active
-                          ? "bg-black text-white"
-                          : "hover:bg-zinc-100"
+                          ? "bg-black text-white dark:bg-white dark:text-black font-medium"
+                          : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-slate-800 hover:text-zinc-900 dark:hover:text-zinc-100"
                       }
                     `}
                   >
@@ -258,7 +262,10 @@ export function AdminSidebar() {
   className="
     mt-auto
     border-t
+    border-zinc-200
+    dark:border-zinc-800
     pt-4
+    shrink-0
   "
 >
 
@@ -273,14 +280,17 @@ export function AdminSidebar() {
       rounded-lg
       bg-red-600
       px-4
-      py-3
+      py-2.5
+      text-sm
+      font-medium
       text-white
       transition
       hover:bg-red-700
+      active:scale-[0.99]
     "
   >
 
-    <LogOut size={18} />
+    <LogOut size={16} />
 
     Logout
 
@@ -288,26 +298,33 @@ export function AdminSidebar() {
 
   <div
     className="
-      mt-4
+      mt-3
       flex
       items-center
       gap-3
       rounded-lg
       border
-      p-3
+      border-zinc-200
+      dark:border-zinc-800
+      p-2.5
+      bg-zinc-50/50
+      dark:bg-slate-800/50
     "
   >
 
     <div
       className="
         flex
-        h-10
-        w-10
+        h-9
+        w-9
+        shrink-0
         items-center
         justify-center
         rounded-full
         bg-zinc-800
         text-white
+        text-xs
+        font-semibold
       "
     >
 
@@ -315,9 +332,9 @@ export function AdminSidebar() {
 
     </div>
 
-    <div>
+    <div className="min-w-0 flex-1">
 
-      <p className="text-sm font-medium">
+      <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">
 
         {user?.email ?? "Admin"}
 
@@ -325,8 +342,9 @@ export function AdminSidebar() {
 
       <p
         className="
-          text-xs
+          text-[11px]
           text-zinc-500
+          capitalize
         "
       >
 

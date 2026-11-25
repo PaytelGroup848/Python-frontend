@@ -19,6 +19,10 @@ export interface User {
   is_active: boolean;
 
   created_at: string;
+
+  city?: string | null;
+
+  country?: string | null;
 }
 
 export interface UsersResponse {
