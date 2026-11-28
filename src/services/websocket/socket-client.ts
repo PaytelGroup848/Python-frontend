@@ -1,10 +1,17 @@
-type SocketPayload = {
+import type {
+  WebImageItem,
+  WebSourceItem,
+} from "@/features/chat/utils/source-parser";
+
+export type SocketPayload = {
   type: string;
   request_id?: string;
   conversation_id?: number | string;
   content?: string;
   response?: string;
   message?: string;
+  sources?: WebSourceItem[];
+  images?: WebImageItem[];
 };
 
 

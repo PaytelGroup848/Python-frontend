@@ -195,9 +195,9 @@ export function DataTableCard({
       {/* TABLE RENDERER CONTAINER */}
       <div className="overflow-x-auto p-0 max-h-[480px]">
         {children ? (
-          <div ref={tableRef as any} className="data-table-wrapper w-full">
+          <table ref={tableRef} className="data-table-wrapper w-full text-left text-xs border-collapse">
             {children}
-          </div>
+          </table>
         ) : (
           <table ref={tableRef} className="w-full text-left text-xs border-collapse">
             {initialHeaders && initialHeaders.length > 0 && (

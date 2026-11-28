@@ -7,12 +7,6 @@ import {
   LogIn,
   ChevronDown,
   Check,
-  FileText,
-  Mic,
-  Globe,
-  Wrench,
-  Code2,
-  Sparkles,
 } from "lucide-react";
 import { useAssistants } from "../hooks/use-assistants";
 import { getAssistantLogo } from "@/features/chat/utils/assistant-logo";
@@ -20,6 +14,7 @@ import { useConversationStore } from "@/features/chat/stores/conversation-store"
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CreateMiniAIModal } from "@/features/mini-ai/components/create-mini-ai-modal";
 import { useState, useEffect } from "react";
 import {
   DropdownMenu,
@@ -30,6 +25,7 @@ import {
 
 export function ChatHeader() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isMiniAIModalOpen, setIsMiniAIModalOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const isGuest = user?.role === "guest" || !user;
 
@@ -160,87 +156,33 @@ export function ChatHeader() {
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">
                         {item.description || "Enterprise AI Assistant"}
                       </p>
-
-                      {/* Micro-tags for capabilities inside dropdown */}
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        {(item.code === "general" || item.config?.document_chat_enabled) && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                            <FileText size={10} className="text-emerald-600 dark:text-emerald-400" />
-                            Docs
-                          </span>
-                        )}
-                        {(item.code === "general" || item.config?.voice_enabled) && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                            <Mic size={10} className="text-teal-600 dark:text-teal-400" />
-                            Voice
-                          </span>
-                        )}
-                        {item.config?.web_search_enabled && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                            <Globe size={10} className="text-sky-600 dark:text-sky-400" />
-                            Web
-                          </span>
-                        )}
-                        {item.config?.tool_calling_enabled && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                            <Wrench size={10} className="text-amber-600 dark:text-amber-400" />
-                            Tools
-                          </span>
-                        )}
-                        {item.code === "coder" && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-medium">
-                            <Code2 size={10} className="text-purple-600 dark:text-purple-400" />
-                            Code Studio
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </DropdownMenuItem>
                 );
               })}
             </div>
+            {!isGuest && (
+              <div className="border-t border-slate-200 dark:border-slate-800 mt-1 pt-1 space-y-0.5">
+                <DropdownMenuItem
+                  onClick={() => setIsMiniAIModalOpen(true)}
+                  className="flex items-center gap-2 p-2.5 rounded-xl cursor-pointer text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <Plus size={14} />
+                  <span>Create My Mini AI</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/mini-ai"
+                    className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <span>Manage Studio</span>
+                    <span>→</span>
+                  </Link>
+                </DropdownMenuItem>
+              </div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* REFINED MICRO CAPABILITY INDICATORS (Subtle enterprise status badges) */}
-        <div className="hidden lg:flex items-center gap-1.5 ml-1 pl-3 border-l border-slate-200/80 dark:border-slate-800">
-          {(assistant?.code === "general" || assistant?.config?.document_chat_enabled) && (
-            <span
-              title="Document Intelligence & OCR Enabled"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
-            >
-              <FileText size={11} className="text-emerald-600 dark:text-emerald-400" />
-              <span>Docs</span>
-            </span>
-          )}
-          {(assistant?.code === "general" || assistant?.config?.voice_enabled) && (
-            <span
-              title="Voice Intelligence & Audio Streaming Ready"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
-            >
-              <Mic size={11} className="text-teal-600 dark:text-teal-400" />
-              <span>Voice</span>
-            </span>
-          )}
-          {assistant?.config?.web_search_enabled && (
-            <span
-              title="Real-time Web Grounding Active"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
-            >
-              <Globe size={11} className="text-sky-600 dark:text-sky-400" />
-              <span>Web</span>
-            </span>
-          )}
-          {assistant?.config?.tool_calling_enabled && (
-            <span
-              title="Automated Tool Calling Active"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
-            >
-              <Wrench size={11} className="text-amber-600 dark:text-amber-400" />
-              <span>Tools</span>
-            </span>
-          )}
-        </div>
       </div>
 
 
@@ -293,6 +235,17 @@ export function ChatHeader() {
         canClose={true}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => setIsAuthModalOpen(false)}
+      />
+
+      <CreateMiniAIModal
+        isOpen={isMiniAIModalOpen}
+        onClose={() => setIsMiniAIModalOpen(false)}
+        onCreated={(id) => {
+          setActiveAssistantId(id);
+          setActiveConversation(null);
+          setMessages([]);
+        }}
+        existingMiniAIs={assistants.filter((a) => a.is_custom)}
       />
     </header>
   );

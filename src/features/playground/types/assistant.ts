@@ -48,6 +48,10 @@ export interface Assistant {
 
     is_active: boolean;
 
+    owner_user_id?: number | null;
+
+    is_custom?: boolean;
+
     created_at: string;
 
     updated_at: string;

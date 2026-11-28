@@ -16,9 +16,10 @@ import { Sparkles, Image as ImageIcon, PenLine, Globe, Code2 } from "lucide-reac
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { CodePreviewPanel } from "./code-preview-panel";
+import { SourcesRail } from "./sources-rail";
 import { useChatStore } from "../stores/chat-store";
 import { useSpeechStore } from "../stores/speech-store";
-import { socketClient } from "@/services/websocket/socket-client";
+import { socketClient, type SocketPayload } from "@/services/websocket/socket-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { useConversationStore } from "../stores/conversation-store";
 import {
@@ -64,6 +65,17 @@ export function ChatWindow() {
       (state) =>
         state.updateLastMessage
     );
+
+  const updateLastMessageSources =
+    useChatStore(
+      (state) =>
+        state.updateLastMessageSources
+    );
+
+  const isSourcesRailOpen = useChatStore((state) => state.isSourcesRailOpen);
+  const railSources = useChatStore((state) => state.railSources);
+  const highlightedSourceIndex = useChatStore((state) => state.highlightedSourceIndex);
+  const closeSourcesRail = useChatStore((state) => state.closeSourcesRail);
 
   const setStreaming =
   useChatStore(
@@ -112,7 +124,35 @@ export function ChatWindow() {
   const activeRequestIdRef = useRef<string | null>(null);
   const thinkStartTimeRef = useRef<number | null>(null);
   const thinkDurationRef = useRef<number | null>(null);
+  const pendingChunkRef = useRef("");
+  const pendingDurationRef = useRef<number | undefined>(undefined);
+  const rafFlushRef = useRef<number | null>(null);
   const [prefillState, setPrefillState] = useState<{ text: string; webSearch?: boolean }>({ text: "" });
+
+  const flushPendingChunks = useCallback(() => {
+    if (rafFlushRef.current !== null) {
+      cancelAnimationFrame(rafFlushRef.current);
+      rafFlushRef.current = null;
+    }
+    const buffered = pendingChunkRef.current;
+    const duration = pendingDurationRef.current;
+    if (!buffered && duration === undefined) return;
+    pendingChunkRef.current = "";
+    pendingDurationRef.current = undefined;
+
+    const currentMessages = useChatStore.getState().messages;
+    const lastMsg = currentMessages[currentMessages.length - 1];
+    if (lastMsg && lastMsg.role === "assistant") {
+      updateLastMessage(buffered, duration !== undefined ? { reasoningDuration: duration } : undefined);
+    } else {
+      addMessage({
+        id: uuid(),
+        role: "assistant",
+        content: buffered,
+        reasoningDuration: duration,
+      });
+    }
+  }, [addMessage, updateLastMessage]);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -170,14 +210,7 @@ export function ChatWindow() {
     }
   }, [activeConversationId, clearMessages, isStreaming, setStreaming]);
 
-  const handleSocketMessage = useCallback((data: {
-    type: string;
-    request_id?: string;
-    conversation_id?: number | string;
-    content?: string;
-    response?: string;
-    message?: string;
-  }) => {
+  const handleSocketMessage = useCallback((data: SocketPayload) => {
     // Immediate shield: If user manually stopped the generation, drop all incoming packets!
     if (isManuallyStoppedRef.current) {
       return;
@@ -220,7 +253,16 @@ export function ChatWindow() {
       return;
     }
 
-    // 4. Handle Content Chunks
+    // 4. Handle Structured Web Sources & Images
+    if (data.type === "sources") {
+      if (data.request_id && !activeRequestIdRef.current) {
+        activeRequestIdRef.current = data.request_id;
+      }
+      updateLastMessageSources(data.sources || [], data.images || []);
+      return;
+    }
+
+    // 4.1 Handle Content Chunks
     if (data.type === "chunk") {
       // Lock request ID if start packet was missed/bypassed
       if (data.request_id && !activeRequestIdRef.current) {
@@ -236,8 +278,8 @@ export function ChatWindow() {
       const lastMsg = currentMessages[currentMessages.length - 1];
 
       // Track live reasoning / think timing
-      let updatedDuration = undefined;
-      const fullText = (lastMsg?.content || "") + text;
+      pendingChunkRef.current += text;
+      const fullText = (lastMsg?.content || "") + pendingChunkRef.current;
       const lowerFull = fullText.toLowerCase();
 
       if (thinkStartTimeRef.current === null && (lowerFull.includes("<think>") || lowerFull.includes("<thought>"))) {
@@ -251,24 +293,18 @@ export function ChatWindow() {
       ) {
         const duration = Number(((Date.now() - thinkStartTimeRef.current) / 1000).toFixed(1));
         thinkDurationRef.current = duration;
-        updatedDuration = duration;
+        pendingDurationRef.current = duration;
       }
 
-      if (lastMsg && lastMsg.role === "assistant") {
-        updateLastMessage(text, updatedDuration !== undefined ? { reasoningDuration: updatedDuration } : undefined);
-      } else {
-        addMessage({
-          id: uuid(),
-          role: "assistant",
-          content: text,
-          reasoningDuration: updatedDuration,
-        });
+      if (rafFlushRef.current === null) {
+        rafFlushRef.current = requestAnimationFrame(flushPendingChunks);
       }
       return;
     }
 
     // 5. Handle Complete Message (Fallback)
     if (data.type === "message") {
+      flushPendingChunks();
       const text = data.content || data.response || "";
       const currentMessages = useChatStore.getState().messages;
       const lastMsg = currentMessages[currentMessages.length - 1];
@@ -293,6 +329,7 @@ export function ChatWindow() {
 
     // 6. Handle Stopped
     if (data.type === "stopped") {
+      flushPendingChunks();
       setStreaming(false);
       streamingConversationIdRef.current = null;
       activeRequestIdRef.current = null;
@@ -361,6 +398,7 @@ export function ChatWindow() {
 
     // 8. Handle Done
     if (data.type === "done") {
+      flushPendingChunks();
       setStreaming(false);
       streamingConversationIdRef.current = null;
       activeRequestIdRef.current = null;
@@ -372,7 +410,7 @@ export function ChatWindow() {
       }
       return;
     }
-  }, [addMessage, setStreaming, updateLastMessage]);
+  }, [addMessage, flushPendingChunks, setStreaming, updateLastMessage, updateLastMessageSources]);
 
   const handleStop = () => {
     useSpeechStore.getState().stop();
@@ -778,65 +816,74 @@ export function ChatWindow() {
             </div>
           </div>
         ) : (
-          <div className="relative z-10 flex flex-col flex-1 h-full w-full overflow-hidden">
-            {/* Message History Scroller */}
-            <div
-              ref={scrollContainerRef}
-              onScroll={handleScroll}
-              className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-2 w-full"
-            >
-              <div className="max-w-4xl mx-auto w-full">
-                <MessageList
-                  messages={displayedMessages}
-                  onEditMessage={handleEditMessage}
-                  onSuggestionClick={(text) => {
-                    if (!isStreaming) {
-                      handleSend(text);
-                    }
-                  }}
-                  onRunPreview={(code, lang) => {
-                    setIsClosedByUser(false);
-                    setPreviewData({ code, language: lang });
-                  }}
-                />
-                <div ref={bottomRef} className="h-2" />
+          <div className="relative z-10 flex flex-1 h-full w-full overflow-hidden">
+            <div className="flex flex-col flex-1 h-full min-w-0 overflow-hidden">
+              {/* Message History Scroller */}
+              <div
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-2 w-full"
+              >
+                <div className="max-w-4xl mx-auto w-full">
+                  <MessageList
+                    messages={displayedMessages}
+                    onEditMessage={handleEditMessage}
+                    onSuggestionClick={(text) => {
+                      if (!isStreaming) {
+                        handleSend(text);
+                      }
+                    }}
+                    onRunPreview={(code, lang) => {
+                      setIsClosedByUser(false);
+                      setPreviewData({ code, language: lang });
+                    }}
+                  />
+                  <div ref={bottomRef} className="h-2" />
+                </div>
+              </div>
+
+              {/* Fixed Bottom Input Dock */}
+              <div className="shrink-0 w-full px-2 sm:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 pt-2 bg-linear-to-t from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95 border-t border-slate-100/60 dark:border-slate-800/60">
+                <div className="max-w-4xl mx-auto w-full">
+                  {isGuest && guestCreditsRemaining === 0 && (
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/25 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/40 px-4 py-2 text-xs text-slate-800 dark:text-slate-200 mb-2 shadow-xs backdrop-blur-md">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0 animate-pulse" />
+                        <span><strong className="font-semibold text-slate-900 dark:text-white">Free credits limit reached:</strong> Sign in or create an account to keep chatting.</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setAuthModalReason("credits_limit");
+                          setIsAuthModalOpen(true);
+                        }}
+                        className="shrink-0 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all shadow-xs active:scale-95 cursor-pointer"
+                      >
+                        Sign In / Register
+                      </button>
+                    </div>
+                  )}
+                  <MessageInput
+                    onSend={handleSend}
+                    onStop={handleStop}
+                    isStreaming={isStreaming}
+                    disabled={isStreaming}
+                    prefillValue={prefillState.text}
+                    prefillWebSearch={prefillState.webSearch}
+                    onClearPrefill={() => setPrefillState({ text: "" })}
+                  />
+                  <p className="text-center text-[11px] text-slate-400 mt-2 select-none">
+                    Patwatoli AI can make mistakes. Verify important info.
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Fixed Bottom Input Dock */}
-            <div className="shrink-0 w-full px-2 sm:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 pt-2 bg-linear-to-t from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95 border-t border-slate-100/60 dark:border-slate-800/60">
-              <div className="max-w-4xl mx-auto w-full">
-                {isGuest && guestCreditsRemaining === 0 && (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/25 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/40 px-4 py-2 text-xs text-slate-800 dark:text-slate-200 mb-2 shadow-xs backdrop-blur-md">
-                    <div className="flex items-center gap-2">
-                      <Sparkles size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0 animate-pulse" />
-                      <span><strong className="font-semibold text-slate-900 dark:text-white">Free credits limit reached:</strong> Sign in or create an account to keep chatting.</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setAuthModalReason("credits_limit");
-                        setIsAuthModalOpen(true);
-                      }}
-                      className="shrink-0 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all shadow-xs active:scale-95 cursor-pointer"
-                    >
-                      Sign In / Register
-                    </button>
-                  </div>
-                )}
-                <MessageInput
-                  onSend={handleSend}
-                  onStop={handleStop}
-                  isStreaming={isStreaming}
-                  disabled={isStreaming}
-                  prefillValue={prefillState.text}
-                  prefillWebSearch={prefillState.webSearch}
-                  onClearPrefill={() => setPrefillState({ text: "" })}
-                />
-                <p className="text-center text-[11px] text-slate-400 mt-2 select-none">
-                  Patwatoli AI can make mistakes. Verify important info.
-                </p>
-              </div>
-            </div>
+            <SourcesRail
+              isOpen={isSourcesRailOpen}
+              sources={railSources}
+              highlightedIndex={highlightedSourceIndex}
+              onClose={closeSourcesRail}
+            />
           </div>
         )
       )}

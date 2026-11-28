@@ -23,10 +23,12 @@ import {
 
 import { Bot, Sparkles, Copy, Check, Code2, Play, FileText, Pencil, Share2, ThumbsUp, ThumbsDown, Globe, ChevronDown } from "lucide-react";
 import { ChatImageCard } from "./chat-image-card";
-import { parseSources, stripCitations, type WebSourceItem, type DocumentSourceItem } from "../utils/source-parser";
+import { parseSources, injectCitationLinks, type WebSourceItem, type DocumentSourceItem } from "../utils/source-parser";
 import { parseReasoning } from "../utils/reasoning-parser";
 import { ReasoningAccordion } from "./reasoning-accordion";
 import { SourcesDropdown } from "./sources-dropdown";
+import { MessageTabsHeader, type ResponseTab } from "./message-tabs-header";
+import { ImagesGridTab } from "./images-grid-tab";
 import { RecommendedSuggestions } from "./recommended-suggestions";
 import { SpeechButton } from "./speech-button";
 import { DataTableCard } from "./data-table-card";
@@ -287,7 +289,13 @@ function AssistantMessageItem({
   onRunPreview,
   onSuggestionClick,
 }: AssistantMessageItemProps) {
-  const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ResponseTab>("answer");
+  const isSourcesRailOpen = useChatStore((s) => s.isSourcesRailOpen);
+  const railMessageId = useChatStore((s) => s.railMessageId);
+  const openSourcesRail = useChatStore((s) => s.openSourcesRail);
+  const toggleSourcesRail = useChatStore((s) => s.toggleSourcesRail);
+
+  const isSourcesOpen = isSourcesRailOpen && railMessageId === message.id;
 
   const exportIntent = useMemo(
     () => detectExportIntent(previousUserPrompt || message.content),
@@ -303,14 +311,25 @@ function AssistantMessageItem({
     () => parseReasoning(message.content),
     [message.content]
   );
-  const { cleanContent, webSources, documentSources, sourceIndexSet, suggestions } = useMemo(
+  const { cleanContent, webSources: parsedWebSources, documentSources, suggestions } = useMemo(
     () => parseSources(contentWithoutReasoning),
     [contentWithoutReasoning]
   );
 
+  const webSources = useMemo(
+    () => (message.sources && message.sources.length > 0 ? message.sources : parsedWebSources),
+    [message.sources, parsedWebSources]
+  );
+  const webImages = useMemo(() => message.images ?? [], [message.images]);
+
+  const effectiveSourceIndexSet = useMemo(
+    () => new Set(webSources.map((s) => s.index)),
+    [webSources]
+  );
+
   const displayContent = useMemo(
-    () => stripCitations(cleanContent, sourceIndexSet),
-    [cleanContent, sourceIndexSet]
+    () => injectCitationLinks(cleanContent, effectiveSourceIndexSet),
+    [cleanContent, effectiveSourceIndexSet]
   );
 
   const markdownComponents: Components = useMemo(
@@ -372,6 +391,28 @@ function AssistantMessageItem({
         return <ChatImageCard src={String(src)} alt={typeof alt === "string" ? alt : "Generated Image"} />;
       },
       a({ href, children }) {
+        if (href && href.startsWith("#source-")) {
+          const idx = parseInt(href.replace("#source-", ""), 10);
+          const matchedSource = webSources.find((s) => s.index === idx);
+          const label = matchedSource?.domain || `source ${idx}`;
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openSourcesRail(message.id, webSources, idx);
+              }}
+              title={matchedSource ? `${matchedSource.title}\n${matchedSource.url}` : `Source ${idx}`}
+              className="mx-0.5 inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700/80 bg-slate-100/90 dark:bg-slate-800/90 px-1.5 py-0.5 align-baseline text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors cursor-pointer"
+            >
+              <span className="max-w-28 truncate">{label}</span>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                +{idx}
+              </span>
+            </button>
+          );
+        }
         return (
           <a
             href={href}
@@ -384,7 +425,7 @@ function AssistantMessageItem({
         );
       },
     }),
-    [onRunPreview]
+    [onRunPreview, webSources, message.id, openSourcesRail]
   );
 
   return (
@@ -425,15 +466,33 @@ function AssistantMessageItem({
           </div>
         )}
 
-        {/* CLEAN CONTENT MARKDOWN */}
-        <div className={isStreaming && isLastMessage ? "streaming-cursor" : ""}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents}
-          >
-            {displayContent}
-          </ReactMarkdown>
-        </div>
+        {/* PERPLEXITY-STYLE TOP RESPONSE TABS (Answer | Links | Images) */}
+        <MessageTabsHeader
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          linksCount={webSources.length}
+          imagesCount={webImages.length}
+        />
+
+        {activeTab === "links" ? (
+          <SourcesDropdown
+            sources={webSources}
+            documentSources={documentSources}
+            isOpen={true}
+            hideHeader={true}
+          />
+        ) : activeTab === "images" ? (
+          <ImagesGridTab images={webImages} />
+        ) : (
+          <div className={isStreaming && isLastMessage ? "streaming-cursor" : ""}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={markdownComponents}
+            >
+              {displayContent}
+            </ReactMarkdown>
+          </div>
+        )}
 
         {/* INTENT-AWARE EXPORT FILE CARD (CHATGPT STANDARD) */}
         {!isStreaming && exportIntent && (
@@ -481,14 +540,14 @@ function AssistantMessageItem({
           webSources={webSources}
           documentSources={documentSources}
           isSourcesOpen={isSourcesOpen}
-          onToggleSources={() => setIsSourcesOpen((prev) => !prev)}
+          onToggleSources={() => toggleSourcesRail(message.id, webSources)}
         />
       )}
 
-      {/* 2. EXPANDED SOURCES LIST (Shown when user clicks Sources button next to Share) */}
-      {(webSources.length > 0 || documentSources.length > 0) && (
+      {/* 2. DOCUMENT SOURCES FALLBACK (when only internal docs exist, no web rail) */}
+      {webSources.length === 0 && documentSources.length > 0 && (
         <SourcesDropdown
-          sources={webSources}
+          sources={[]}
           documentSources={documentSources}
           isOpen={isSourcesOpen}
           hideHeader={true}

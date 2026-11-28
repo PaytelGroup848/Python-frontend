@@ -1,3 +1,5 @@
+import type { WebImageItem, WebSourceItem } from "../utils/source-parser";
+
 export interface ChatMessageAttachment {
   filename: string;
   status?: string;
@@ -13,4 +15,6 @@ export interface ChatMessage {
   think?: boolean;
   reasoningContent?: string;
   reasoningDuration?: number;
+  sources?: WebSourceItem[];
+  images?: WebImageItem[];
 }

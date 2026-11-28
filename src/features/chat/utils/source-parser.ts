@@ -3,6 +3,16 @@ export interface WebSourceItem {
   title: string;
   url: string;
   domain: string;
+  snippet?: string;
+  favicon?: string;
+}
+
+export interface WebImageItem {
+  title: string;
+  url: string;
+  thumbnail: string;
+  source_url: string;
+  domain?: string;
 }
 
 export interface DocumentSourceItem {
@@ -93,7 +103,7 @@ function tryExtractTrailingSuggestions(content: string): { remaining: string; su
   }
 
   try {
-    const suggestionRegex = /(?:\r?\n){1,2}(?:(?:#{1,4}\s*)?\*{0,2}💡\s*(?:Follow-up\s+)?Suggestions:?\*{0,2}|(?:#{1,4}\s*|\*{1,2})(?:Follow-up\s+)?Suggestions:?\*{0,2}|(?:Follow-up\s+)?Suggestions:)\s*(?:\r?\n)([\s\S]*)$/i;
+    const suggestionRegex = /(?:\r?\n){1,2}(?:(?:#{1,4}\s*)?\*{0,2}💡\s*(?:(?:Follow-up|Suggested|Related)\s+)?(?:Suggestions|Questions):?\*{0,2}|(?:#{1,4}\s*|\*{1,2})(?:(?:Follow-up|Suggested|Related)\s+(?:Suggestions|Questions)|Suggestions|Next\s+Steps|You\s+might\s+also\s+ask):?\*{0,2}|(?:Follow-up\s+)?Suggestions:)\s*(?:\r?\n)([\s\S]*)$/i;
     const match = content.match(suggestionRegex);
 
     if (!match || match.index === undefined || isInsideCodeFence(content, match.index)) {
@@ -177,15 +187,8 @@ export function parseSources(content: string): ParsedMessageResult {
   const documentSources: DocumentSourceItem[] = [];
   let suggestions: string[] = [];
 
-  // 1. Try extract Suggestions from the very end first (if appended after sources)
-  const sugRes1 = tryExtractTrailingSuggestions(clean);
-  if (sugRes1.suggestions.length > 0) {
-    clean = sugRes1.remaining;
-    suggestions = sugRes1.suggestions;
-  }
-
-  // 2. Match Document Citations block:
-  // e.g. **📌 Documents:** \n `📄 filename.pdf (Page 2)`  `📄 doc2.pdf`
+  // 1. Extract Document Citations & Web Sources first if appended at the end
+  // (prevents **🌐 Sources:** or **📌 Documents:** from leaking into trailing Suggestions)
   const docHeaderRegex = /(?:\r?\n){1,2}\*{0,2}📌\s*Documents:?\*{0,2}\s*([\s\S]*)$/i;
   const docMatch = clean.match(docHeaderRegex);
   if (docMatch && docMatch.index !== undefined && !isInsideCodeFence(clean, docMatch.index)) {
@@ -204,9 +207,8 @@ export function parseSources(content: string): ParsedMessageResult {
     }
   }
 
-  // 3. Match Web Sources block:
+  // 2. Match Web Sources block:
   // e.g. **🌐 Sources:** \n [1] [Title](https://...) \n [2] [Title 2](https://...)
-  // or inline: 🌐 Sources: [1] Title ...
   const webHeaderRegex = /(?:\r?\n){1,2}\*{0,2}🌐\s*Sources:?\*{0,2}\s*([\s\S]*)$/i;
   const webMatch = clean.match(webHeaderRegex);
   if (webMatch && webMatch.index !== undefined && !isInsideCodeFence(clean, webMatch.index)) {
@@ -268,13 +270,11 @@ export function parseSources(content: string): ParsedMessageResult {
     }
   }
 
-  // 4. If Suggestions was generated BEFORE Sources / Documents, it will now be at the end
-  if (suggestions.length === 0) {
-    const sugRes2 = tryExtractTrailingSuggestions(clean);
-    if (sugRes2.suggestions.length > 0) {
-      clean = sugRes2.remaining;
-      suggestions = sugRes2.suggestions;
-    }
+  // 3. Extract Suggestions cleanly from the remaining trailing block
+  const sugRes = tryExtractTrailingSuggestions(clean);
+  if (sugRes.suggestions.length > 0) {
+    clean = sugRes.remaining;
+    suggestions = sugRes.suggestions;
   }
 
   // Preserve backend numeric order
